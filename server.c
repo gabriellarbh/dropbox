@@ -32,19 +32,20 @@ int main(int argc, char *argv[])
 	if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) == -1) 
 		printf("ERROR on accept");
 	
-	bzero(buffer, 256);
-	
+
+	while(1){
 	/* read from the socket */
+	bzero(buffer, 256);
 	n = read(newsockfd, buffer, 256);
 	if (n < 0) 
 		printf("ERROR reading from socket");
-	printf("Here is the message: %s\n", buffer);
+	printf("Here is the message: %s", buffer);
 	
 	/* write in the socket */ 
 	n = write(newsockfd,"I got your message", 18);
 	if (n < 0) 
 		printf("ERROR writing to socket");
-
+}
 	close(newsockfd);
 	close(sockfd);
 	return 0; 
