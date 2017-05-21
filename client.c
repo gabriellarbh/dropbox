@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
+
 #define PORT 5000
 
 int globalSocket;
@@ -27,7 +28,32 @@ int fsize(FILE *fp){
     	return -1;
     }
 }
-
+void receive_file(char* file){
+	long int size = 0;
+    int count = 0;
+    char buffer[256];
+    char newBuffer;
+    int n;
+    unsigned char* bufferSize;
+	FILE* fp = fopen(file, "w+"); // <- tem que cuidar saporra aqui
+    if (fp){
+        bufferSize = (unsigned char*)&size;
+        n = read(globalSocket,bufferSize, 4);
+        while(count < size){
+            count++;
+            n = read(globalSocket, (void*)&newBuffer, 1);
+            fputc(newBuffer,fp);
+        }
+        
+        strcpy(buffer, "File received successfully!\n");
+        n = write(globalSocket, buffer, sizeof(buffer));
+        printf("Download of the file %s finished!!!\n", file);
+        fclose(fp);
+    }
+    else{
+        printf("fopen eh null\n");
+    }
+}
 
 void send_file(char *file) {
 	FILE *fp = fopen(file, "r");
@@ -93,7 +119,7 @@ int main(int argc, char *argv[])
         printf("ERROR connecting\n");
 
     // ATÉ AQUI É CÓDIGO DO ALBERTO
-    
+
     while(1){
     	globalSocket = sockfd;
     	bzero(buffer, 256);
@@ -115,6 +141,15 @@ int main(int argc, char *argv[])
 	    	fileName = strtok(NULL, " ");
 	    	fileName[strlen(fileName) - 1] = 0;
 			send_file(fileName);
+	    }
+	    else if(strstr(buffer, "download")){
+	    	n = write(sockfd, buffer, strlen(buffer));
+	    	if(n < 0)
+	    		printf("Error sending download command.\n");
+	    	char* fileName = strtok(buffer, " ");
+	    	fileName = strtok(NULL, " ");
+	    	fileName[strlen(fileName) - 1] = 0;
+			receive_file(fileName);
 	    }
     }
    	printf("Connection closed. Terminating the program\n");
