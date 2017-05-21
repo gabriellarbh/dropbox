@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 	    printf("client > ");
 	    fgets(buffer, 256, stdin);
 
-	    if(strstr(buffer, "close")){
+	    if(strstr(buffer, "exit")){
 	    	n = write(sockfd, buffer, strlen(buffer));
 	    	close(sockfd);
 	    	break;

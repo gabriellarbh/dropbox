@@ -115,7 +115,7 @@ void server_loop(int socket){
             fileName[strlen(fileName) - 1] = 0;
             send_file(fileName);
 	    }
-	    else if (strstr(buffer, "close")){
+	    else if (strstr(buffer, "exit")){
 	    	printf("Closing client with id %d\n", clientSocket);
     		close(clientSocket);
     		break;
