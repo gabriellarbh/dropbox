@@ -65,6 +65,8 @@ void send_file(char *file) {
 
 	if(!fp) {
 		printf("File doesn't exist. Please specify a valid file name\n");
+		bufferSize = (unsigned char*) &size;
+		n = write(globalSocket, (void*)bufferSize, 4);
 		return;
 	}
 	// Valid file, starts the stream to the server

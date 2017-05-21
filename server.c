@@ -9,7 +9,6 @@
 
 #define PORT 5000
 
-int clientSocket = -1;
 int fsize(FILE *fp){
 	if(fp != NULL){
 	    int prev=ftell(fp);
@@ -24,7 +23,7 @@ int fsize(FILE *fp){
     }
 }
 
-void receive_file(char* file){
+void receive_file(char* file, int socket){
     long int size = 0;
     int count = 0;
     char buffer[256];
@@ -35,15 +34,21 @@ void receive_file(char* file){
 	FILE* fp = fopen("output.txt", "w+"); 
     if (fp){
         bufferSize = (unsigned char*)&size;
-        n = read(clientSocket,bufferSize, 4);
+        n = read(socket,bufferSize, 4);
+
+        if(size < 0){
+        	printf("File doesnt exist\n");
+        	return;
+        }
+
         while(count < size){
             count++;
-            n = read(clientSocket, (void*)&newBuffer, 1);
+            n = read(socket, (void*)&newBuffer, 1);
             fputc(newBuffer,fp);
         }
         
         strcpy(buffer, "File received successfully!\n");
-        n = write(clientSocket, buffer, sizeof(buffer));
+        n = write(socket, buffer, sizeof(buffer));
         printf("File %s finished!!!\n", file);
         fclose(fp);
     }
@@ -52,7 +57,7 @@ void receive_file(char* file){
     }
 }
 
-void send_file(char*file){
+void send_file(char*file, int socket){
 	FILE *fp = fopen(file, "r");
 	int n, count = 0;
 	long int size = fsize(fp);
@@ -62,7 +67,7 @@ void send_file(char*file){
 
 	if(!fp) {
 		printf("File doesn't exist. Please specify a valid file name\n");
-		n = write(clientSocket, "File doesn't exist.", sizeof("File doesn't exist."));
+		n = write(socket, "File doesn't exist.", sizeof("File doesn't exist."));
 		return;
 	}
 	// Valid file, starts the stream to the server
@@ -70,12 +75,12 @@ void send_file(char*file){
 		//printf("Tamanho do arquivo %ld\n", size);  // CUIDAR LITTLE ENDIAN E BIG ENDIAN PQ O ALBERTO VAI RECLAMAR
 		// First passes the size of the file to the server
 		bufferSize = (unsigned char*) &size;
-		n = write(clientSocket, (void*)bufferSize, 4);
+		n = write(socket, (void*)bufferSize, 4);
 		if (n > 0) {
 			while(count < size) {
 				buffer = fgetc(fp);
 				count++;
-				n = write(clientSocket, (void*)&buffer, 1);
+				n = write(socket, (void*)&buffer, 1);
 				if (n < 0)
 					break;
 			}
@@ -84,45 +89,47 @@ void send_file(char*file){
 		// wait for servers answer
 		printf("File %s upload is finished.\n", file);
 		fclose(fp);
-		n = read(clientSocket, newBuffer, 256);
+		n = read(socket, newBuffer, 256);
 		printf("Client answered: %s\n", newBuffer);
 	}
 
 }
 
-void server_loop(int socket){
+void* server_loop(void *oldSocket){
 	char buffer[256];
 	int n;
-	clientSocket = socket;
+	int socket = (int) oldSocket;
 	while(1){
         /* read from the socket */
         bzero(buffer, 256);
-        
-        n = (int)read(socket, (void*)buffer, 256);
-        if (n < 0)
+        n = read(socket, (void*)buffer, 256);
+        if (n < 0){
             printf("ERROR reading from socket");
+            return (void*)-1;
+        }
         // upload command was received
         if(strstr(buffer, "upload")) {  
         	// Parsing the file name          
             char* fileName = strtok(buffer, " ");
             fileName = strtok(NULL, " ");
             fileName[strlen(fileName) - 1] = 0;
-            receive_file(fileName);
+            receive_file(fileName, socket);
 	        }
 	    else if(strstr(buffer, "download")){
 	    	char* fileName = strtok(buffer, " ");
             fileName = strtok(NULL, " ");
             fileName[strlen(fileName) - 1] = 0;
-            send_file(fileName);
+            send_file(fileName, socket);
 	    }
 	    else if (strstr(buffer, "exit")){
-	    	printf("Closing client with id %d\n", clientSocket);
-    		close(clientSocket);
+	    	printf("Closing client with id %d\n", socket);
+    		close(socket);
+    		pthread_exit(0);
     		break;
 	    }
 
 	}
-
+	return (void*) 1;
 }
 
 
@@ -132,10 +139,12 @@ int main(int argc, char *argv[])
     socklen_t clilen;
     char buffer[256];
     struct sockaddr_in serv_addr, cli_addr;
-    pid_t pid;
+    pthread_t tid[10];
+    int threadCount = 0;
+    //pid_t pid;
     
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        printf("ERROR opening socket");
+        printf("ERROR opening socket\n");
     
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
@@ -143,18 +152,17 @@ int main(int argc, char *argv[])
     bzero(&(serv_addr.sin_zero), 8);
     
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-        printf("ERROR on binding");
+        printf("ERROR on binding\n");
     while(1){
 	    listen(sockfd, 5);
 	    clilen = sizeof(struct sockaddr_in);
 	    if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen)) == -1){
-	        printf("ERROR on accept");
+	        printf("ERROR on accept\n");
 	    }
 	    else {
-	    	pid = fork();
-	    	if(pid == 0) {
-	    		server_loop(newsockfd);
-	    	}
+	    	pthread_create(&tid[threadCount], NULL, server_loop, (void*)(size_t)newsockfd);
+	    	threadCount++;
+    		pthread_join(tid[threadCount], NULL);
 	    }
 	}
     close(sockfd);
