@@ -18,7 +18,6 @@ int fsize(FILE *fp){
 	    return sz;
     }
     else {
-    	printf("FILE NAO EXISTE SUA ANIMALE\n");
     	return -1;
     }
 }
@@ -37,7 +36,7 @@ void receive_file(char* file, int socket){
         n = read(socket,bufferSize, 4);
 
         if(size < 0){
-        	printf("File doesnt exist\n");
+        	printf("File %s doesn't exist\n", file);
         	return;
         }
 
@@ -105,6 +104,7 @@ void* server_loop(void *oldSocket){
         n = read(socket, (void*)buffer, 256);
         if (n < 0){
             printf("ERROR reading from socket");
+            close(socket);
             return (void*)-1;
         }
         // upload command was received
