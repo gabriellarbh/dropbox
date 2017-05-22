@@ -13,6 +13,12 @@
 
 #define PORT 5000
 
+ void close_connection(int socket) {
+ 	int n = write(socket, "exit", strlen("exit"));
+	close(socket);
+ }
+
+
 void receive_file(char* file, int socket){
 	long int size = 0;
     int count = 0;
@@ -88,8 +94,7 @@ void client_loop(int socket) {
 	    fgets(buffer, 256, stdin);
 
 	    if(strstr(buffer, "exit")){
-	    	n = write(socket, buffer, strlen(buffer));
-	    	close(socket);
+	    	close_connection(socket);
 	    	break;
 	    }
 	    if(strstr(buffer, "upload")){
@@ -115,35 +120,41 @@ void client_loop(int socket) {
     }
 }
 
-int main(int argc, char *argv[])
-{
-    int socketfd, n;
+int connect_server(char *host, int port) {
+	int socketfd, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
-	
     char buffer[256];
-    if (argc < 2) {
-		fprintf(stderr,"usage %s hostname\n", argv[0]);
-		exit(0);
-    }
-	
-	server = gethostbyname(argv[1]);
+
+    server = gethostbyname(host);
 	if (server == NULL) {
         fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
+        return -1;
     }
-    if ((socketfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
+    if ((socketfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         printf("ERROR opening socket\n");
+        return -1;
+    }
     
 	serv_addr.sin_family = AF_INET;     
-	serv_addr.sin_port = htons(PORT);    
+	serv_addr.sin_port = htons(port);    
 	serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
 	bzero(&(serv_addr.sin_zero), 8);    
 	if (connect(socketfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         printf("ERROR connecting\n");
 
     client_loop(socketfd);
-    
+    return 1;
+
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2) {
+		fprintf(stderr,"usage %s hostname\n", argv[0]);
+		exit(0);
+    }
+    connect_server(argv[1], PORT);
    	printf("Connection closed. Terminating the program\n");
     return 0;
 }
