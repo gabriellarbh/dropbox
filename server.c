@@ -7,8 +7,6 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include "server.h"
-#include "dropboxUtil.h"
-
 #define PORT 5000
 
 void receive_file(char* file, int socket){
@@ -42,6 +40,20 @@ void receive_file(char* file, int socket){
     }
     else{
         printf("fopen eh null\n");
+    }
+}
+
+
+// AGORA: Cria o diretório do usuário, caso ele não exista ainda
+// Depois: Cria o diretório e a estrutura cliente e a preenche com os arquivos dentro
+// do diretório
+void login_user(char* user){
+    struct stat st = {0};
+    char directory[40];
+    strcpy(directory, "./sync_dir_");
+    strcat(directory, user);
+    if (stat(directory, &st) == -1) {
+        mkdir(directory, 0700);
     }
 }
 
@@ -96,8 +108,13 @@ void* server_loop(void *oldSocket){
             close(socket);
             return (void*)-1;
         }
+        if(strstr(buffer, "login")){
+            char* username = strtok(buffer, " ");
+            username = strtok(NULL, " ");
+            login_user(username);
+        }
         // upload command was received
-        if(strstr(buffer, "upload")) {  
+        else if(strstr(buffer, "upload")) {  
         	// Parsing the file name          
             char* fileName = strtok(buffer, " ");
             fileName = strtok(NULL, " ");

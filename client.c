@@ -18,7 +18,6 @@
 	close(socket);
  }
 
-
 void receive_file(char* file, int socket){
 	long int size = 0;
     int count = 0;
@@ -142,19 +141,23 @@ int connect_server(char *host, int port) {
 	bzero(&(serv_addr.sin_zero), 8);    
 	if (connect(socketfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         printf("ERROR connecting\n");
-
-    client_loop(socketfd);
-    return 1;
-
+    return socketfd;
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-		fprintf(stderr,"usage %s hostname\n", argv[0]);
+    if (argc < 4) {
+		printf("Usage: ./client username hostname port");
 		exit(0);
     }
-    connect_server(argv[1], PORT);
+    int socket = connect_server(argv[2], PORT);
+    // Faz a conexão do usuário com o servidor
+    char username[40];
+    strcpy(username, "login ");
+    strcat(username, argv[1]);
+    int n = write(socket, username, strlen(username));
+
+    client_loop(socket);
    	printf("Connection closed. Terminating the program\n");
     return 0;
 }
