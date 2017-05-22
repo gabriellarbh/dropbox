@@ -8,24 +8,11 @@
 #include <sys/stat.h>
 #include <netinet/in.h>
 #include <netdb.h> 
+#include "client.h"
 
 
 #define PORT 5000
 
-
-
-int fsize(FILE *fp){
-	if(fp != NULL){
-	    int prev=ftell(fp);
-	    fseek(fp, 0L, SEEK_END);
-	    int sz=ftell(fp);
-	    fseek(fp,prev,SEEK_SET); //go back to where we were
-	    return sz;
-    }
-    else {
-    	return -1;
-    }
-}
 void receive_file(char* file, int socket){
 	long int size = 0;
     int count = 0;
@@ -56,7 +43,7 @@ void receive_file(char* file, int socket){
 void send_file(char *file, int socket) {
 	FILE *fp = fopen(file, "r");
 	int n, count = 0;
-	long int size = fsize(fp);
+	long int size = file_size(fp);
 	char buffer, newBuffer[256];
 	// Auxiliar to help casting the file size to buffer
 	unsigned char* bufferSize;
