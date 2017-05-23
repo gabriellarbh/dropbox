@@ -11,6 +11,6 @@ server: server.o dropboxUtil.o
 dropboxUtil.o: dropboxUtil.c
 	gcc -o dropboxUtil.o -c dropboxUtil.c -W -Wall -ansi -pedantic
 clean:
-	rm *.o
+	rm *.o server client
 cleanTXT:
 	rm -rf *.txt

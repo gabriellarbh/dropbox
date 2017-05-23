@@ -5,6 +5,9 @@
 #include <string.h>
 #define MAXNAME 30
 #define MAXFILES 30
+#define MAXCHARS 100
+#define ERROR 1 
+
 struct file_info {
 	char name[MAXNAME];
   	char extension[MAXNAME];
@@ -18,12 +21,17 @@ struct client {
  	int logged_in;
  };
 
-
+ typedef struct client CLIENT;
+ typedef struct file_info FILEINFO;
 
 int file_size(FILE* fp);
 
-struct file_info createFile(char* name, char* ext, int size);
-struct client createClient(char* name);
+FILEINFO createFile(char* name, char* ext, int size);
+CLIENT createClient(char* name);
 char* getCurrentTime();
 
-struct file_info findFile(struct client user, char* name, char* ext);
+FILEINFO findFile(CLIENT user, char* name);
+int getFileFromStream(char* file, int socket);
+char* parseFilename(char* src);
+int getUnusedFILEINFO(CLIENT user);
+char* getPath(CLIENT user, char*file);

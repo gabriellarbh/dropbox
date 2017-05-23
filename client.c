@@ -20,27 +20,13 @@
 
 void receive_file(char* file, int socket){
 	long int size = 0;
-    int count = 0;
-    char buffer[256];
-    char newBuffer;
-    int n;
+    int i, n;
+    char buffer[256], newBuffer;
     unsigned char* bufferSize;
-	FILE* fp = fopen(file, "w+"); // <- tem que cuidar saporra aqui
-    if (fp){
-        bufferSize = (unsigned char*)&size;
-        n = read(socket,bufferSize, 4);
-        while(count < size){
-            count++;
-            n = read(socket, (void*)&newBuffer, 1);
-            fputc(newBuffer,fp);
-        }
+    if(getFileFromStream(file, socket)){
         strcpy(buffer, "File received successfully!\n");
         n = write(socket, buffer, sizeof(buffer));
-        printf("Download of the file %s finished!!!\n", file);
-        fclose(fp);
-    }
-    else{
-        printf("fopen eh null\n");
+        printf("Download of the file %s finished!\n", file);
     }
 }
 
@@ -117,7 +103,7 @@ void client_loop(int socket) {
 	    }
     }
 }
-
+// Basicamente o código de TCP do pôfessô
 int connect_server(char *host, int port) {
 	int socketfd, n;
     struct sockaddr_in serv_addr;

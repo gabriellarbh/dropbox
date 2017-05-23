@@ -9,37 +9,54 @@
 #include "server.h"
 #define PORT 5000
 
-void receive_file(char* file, int socket){
+void receive_file(char* file, int socket, CLIENT user){
     long int size = 0;
-    int count = 0;
+    int i;
     char buffer[256];
     char newBuffer;
     int n;
     unsigned char* bufferSize;
-	//FILE* fp = fopen(file, "w+");      <- deve-se usar essa, mas a motivos de teste fiz um novo arquivo.
-	FILE* fp = fopen("output.txt", "w+"); 
+    char *path = getPath(user, file);
+	FILE* fp = fopen(path, "r+");    //  <- deve-se usar essa, mas a motivos de teste fiz um novo arquivo.
+	//FILE* fp = fopen("output.txt", "w+"); 
+
     if (fp){
-        bufferSize = (unsigned char*)&size;
-        n = read(socket,bufferSize, 4);
-
-        if(size < 0){
-        	printf("File %s doesn't exist\n", file);
-        	return;
-        }
-
-        while(count < size){
-            count++;
-            n = read(socket, (void*)&newBuffer, 1);
-            fputc(newBuffer,fp);
-        }
-        
-        strcpy(buffer, "File received successfully!\n");
-        n = write(socket, buffer, sizeof(buffer));
-        printf("File %s finished!!!\n", file);
         fclose(fp);
+        if(getFileFromStream(path, socket)) {
+            // Avisa o cliente que o file foi atualizado
+            // e coloca mensagem na tela
+            strcpy(buffer, "File updated successfully!\n");
+            n = write(socket, buffer, sizeof(buffer));
+            printf("User %s id %d > File %s finished!!!\n", user.userid,socket,file);
+
+            // Como o arquivo existe, a estrutura FILEINFO também já existe
+            // logo, a atualiza com o novo time stamp
+            FILEINFO aux = findFile(user, file);
+            strcpy(aux.last_modified, getCurrentTime());
+            printf("User %s id %d > File %s updated at %s\n",user.userid,socket, aux.name, aux.last_modified);
+        }
+        else {
+            strcpy(buffer, "Error while transfering file. Please, try again\n");
+            n = write(socket, buffer, sizeof(buffer));
+        } 
     }
+    // File não existe no servidor. Cria o arquivo e a estrutura
     else{
-        printf("fopen eh null\n");
+        if(getFileFromStream(path, socket)){
+            strcpy(buffer, "File uploaded successfully!\n");
+            n = write(socket, buffer, sizeof(buffer));
+            printf("User %s id %d > File %s upload finished!!!\n", user.userid, socket, file);
+
+            FILEINFO aux = user.files[getUnusedFILEINFO(user)];
+            strcpy(aux.name, file);
+            strcpy(aux.extension, "txt");
+            strcpy(aux.last_modified, getCurrentTime());
+            aux.size = size;
+        }
+        else {
+            strcpy(buffer, "Error while transfering file. Please, try again\n");
+            n = write(socket, buffer, sizeof(buffer));
+        }
     }
 }
 
@@ -55,23 +72,26 @@ struct client login_user(char* user){
     if (stat(directory, &st) == -1) {
         mkdir(directory, 0700);
     }
-
     struct client novo = createClient(user);
     return novo;
 
 }
 
-void send_file(char*file, int socket){
-	FILE *fp = fopen(file, "r");
-	int n, count = 0;
+void send_file(char*file, int socket, CLIENT user){
+    char *path = getPath(user, file);
+	FILE *fp = fopen(path, "r");
+	int n, i;
 	long int size = file_size(fp);
 	char buffer, newBuffer[256];
 	// Auxiliar to help casting the file size to buffer
 	unsigned char* bufferSize;
 
-	if(!fp) {
-		printf("File doesn't exist. Please specify a valid file name\n");
-		n = write(socket, "File doesn't exist.", sizeof("File doesn't exist."));
+	if(fp == NULL) {
+		printf("File doesn't exist. Please specify a valid file name %ld \n", size);
+        bufferSize = (unsigned char*) &size;
+        n = write(socket, (void*)bufferSize, 4);
+        if (n < 0)
+            printf("Deu erro na conexão");
 		return;
 	}
 	// Valid file, starts the stream to the server
@@ -81,9 +101,8 @@ void send_file(char*file, int socket){
 		bufferSize = (unsigned char*) &size;
 		n = write(socket, (void*)bufferSize, 4);
 		if (n > 0) {
-			while(count < size) {
+			for(i = 0; i < size; i++) {
 				buffer = fgetc(fp);
-				count++;
 				n = write(socket, (void*)&buffer, 1);
 				if (n < 0)
 					break;
@@ -101,9 +120,10 @@ void send_file(char*file, int socket){
 
 void* server_loop(void *oldSocket){
 	char buffer[256];
+    char* fileName;
 	int n;
 	int socket = (int) oldSocket;
-	struct client currentClient;
+	CLIENT user;
 	while(1){
         /* read from the socket */
         bzero(buffer, 256);
@@ -116,21 +136,15 @@ void* server_loop(void *oldSocket){
         if(strstr(buffer, "login")){
             char* username = strtok(buffer, " ");
             username = strtok(NULL, " ");
-            login_user(username);
+            user = login_user(username);
         }
-        // upload command was received
-        else if(strstr(buffer, "upload")) {  
-        	// Parsing the file name          
-            char* fileName = strtok(buffer, " ");
-            fileName = strtok(NULL, " ");
-            fileName[strlen(fileName) - 1] = 0;
-            receive_file(fileName, socket);
+        else if(strstr(buffer, "upload")) {   
+            fileName = parseFilename(buffer);
+            receive_file(fileName, socket, user);
 	        }
 	    else if(strstr(buffer, "download")){
-	    	char* fileName = strtok(buffer, " ");
-            fileName = strtok(NULL, " ");
-            fileName[strlen(fileName) - 1] = 0;
-            send_file(fileName, socket);
+	    	fileName = parseFilename(buffer);
+            send_file(fileName, socket, user);
 	    }
 	    else if (strstr(buffer, "exit")){
 	    	printf("Closing client with id %d\n", socket);
