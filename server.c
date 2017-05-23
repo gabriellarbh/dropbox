@@ -47,7 +47,7 @@ void receive_file(char* file, int socket){
 // AGORA: Cria o diretório do usuário, caso ele não exista ainda
 // Depois: Cria o diretório e a estrutura cliente e a preenche com os arquivos dentro
 // do diretório
-void login_user(char* user){
+struct client login_user(char* user){
     struct stat st = {0};
     char directory[40];
     strcpy(directory, "./sync_dir_");
@@ -55,6 +55,10 @@ void login_user(char* user){
     if (stat(directory, &st) == -1) {
         mkdir(directory, 0700);
     }
+
+    struct client novo = createClient(user);
+    return novo;
+
 }
 
 void send_file(char*file, int socket){
@@ -99,6 +103,7 @@ void* server_loop(void *oldSocket){
 	char buffer[256];
 	int n;
 	int socket = (int) oldSocket;
+	struct client currentClient;
 	while(1){
         /* read from the socket */
         bzero(buffer, 256);

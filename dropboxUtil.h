@@ -1,7 +1,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <time.h>
+#include <string.h>
 #define MAXNAME 30
 #define MAXFILES 30
 struct file_info {
@@ -20,3 +21,9 @@ struct client {
 
 
 int file_size(FILE* fp);
+
+struct file_info createFile(char* name, char* ext, int size);
+struct client createClient(char* name);
+char* getCurrentTime();
+
+struct file_info findFile(struct client user, char* name, char* ext);

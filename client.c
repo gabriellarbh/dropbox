@@ -34,7 +34,6 @@ void receive_file(char* file, int socket){
             n = read(socket, (void*)&newBuffer, 1);
             fputc(newBuffer,fp);
         }
-        
         strcpy(buffer, "File received successfully!\n");
         n = write(socket, buffer, sizeof(buffer));
         printf("Download of the file %s finished!!!\n", file);
@@ -89,7 +88,7 @@ void client_loop(int socket) {
     char buffer[256];
 	while(1){
     	bzero(buffer, 256);
-	    printf("client > ");
+        printf("client > ");
 	    fgets(buffer, 256, stdin);
 
 	    if(strstr(buffer, "exit")){
