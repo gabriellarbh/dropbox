@@ -7,6 +7,7 @@
 #define MAXFILES 30
 #define MAXCHARS 100
 #define ERROR 1 
+#define SIZE_ERROR 4294967295  /* Que deus perdoe esses programadores ruins */
 
 struct file_info {
 	char name[MAXNAME];
@@ -35,3 +36,7 @@ int getFileFromStream(char* file, int socket);
 char* parseFilename(char* src);
 int getUnusedFILEINFO(CLIENT user);
 char* getPath(CLIENT user, char*file);
+
+uint32_t
+unpack32(uint8_t *src);
+

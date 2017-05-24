@@ -101,8 +101,7 @@ int getFileFromStream(char* file, int socket){
     /* pega o tamanho do file a ser recebido */
     bufferSize = (unsigned char*)&size;
     n = read(socket,bufferSize, 4);
-    if (size < 0){
-    	printf("DEU ERRO GORIZADA");
+    if (size >= SIZE_ERROR){
     	return -1;
     }
     /* começa a ler da stream, byte a byte, o arquivo */
@@ -121,7 +120,6 @@ char* getPath(CLIENT user, char*file) {
     strcat(path, file);
     return path;
 }
-
 
 
 
