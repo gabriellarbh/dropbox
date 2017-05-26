@@ -58,14 +58,15 @@ void list_files(int socket, CLIENT* user){
     int n;
     char buffer[MAXCHARS*3] = "";
     FILEINFO* it;
-    do {
+   do{
         it = GetAtIteratorFila2(user->files);
-        strcpy(buffer, it->name);
+        strcat(buffer, it->name);
         strcat(buffer, ".");
         strcat(buffer, it->extension);
         strcat(buffer, "\n");
         printf("file %s", buffer);
-    } while(user->files->it->next != NULL);
+
+    } while(!NextFila2(user->files));
     n = write(socket, buffer, sizeof(buffer));
 }
 

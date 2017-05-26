@@ -37,14 +37,12 @@ int	NextFila2(PFILA2 pFila) {
 //Se a fila existir, e o iterador aponta para um nodo 
 	if(pFila != NULL && pFila->it != NULL){
 		//Se não há próximo na fila, retorna 0 e printa que nao há próximo
-		if (pFila->it->next != NULL)
+		if (pFila->it->next != NULL){
 			pFila->it = pFila->it->next;
-		return 0;
-		
+			return 0;
+		}
 	}
-	else{
-		return ERROR;
-	}
+	return ERROR;
 }
 
 void *GetAtIteratorFila2(PFILA2 pFila) {
