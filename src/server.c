@@ -9,31 +9,25 @@
 #include "server.h"
 #define PORT 5000
 
-void receive_file(char* file, int socket, CLIENT user){
+void receive_file(char* file, int socket, CLIENT* user){
     long int size = 0;
-    int i;
     char buffer[256];
-    char newBuffer;
     int n;
-    unsigned char* bufferSize;
     char *path = getPath(user, file);
 	FILE* fp = fopen(path, "r+");    //  <- deve-se usar essa, mas a motivos de teste fiz um novo arquivo.
-	//FILE* fp = fopen("output.txt", "w+"); 
-
     if (fp){
         fclose(fp);
-        if(getFileFromStream(path, socket)) {
+        if((size = getFileFromStream(path, socket)) > 0) {
             // Avisa o cliente que o file foi atualizado
             // e coloca mensagem na tela
             strcpy(buffer, "File updated successfully!\n");
             n = write(socket, buffer, sizeof(buffer));
-            printf("User %s id %d > File %s finished!!!\n", user.userid,socket,file);
+            printf("User %s id %d > File %s finished!!!\n", user->userid,socket,file);
+
+
 
             // Como o arquivo existe, a estrutura FILEINFO também já existe
             // logo, a atualiza com o novo time stamp
-            FILEINFO aux = findFile(user, file);
-            strcpy(aux.last_modified, getCurrentTime());
-            printf("User %s id %d > File %s updated at %s\n",user.userid,socket, aux.name, aux.last_modified);
         }
         else {
             strcpy(buffer, "Error while transfering file. Please, try again\n");
@@ -42,16 +36,15 @@ void receive_file(char* file, int socket, CLIENT user){
     }
     // File não existe no servidor. Cria o arquivo e a estrutura
     else{
-        if(getFileFromStream(path, socket)){
+        if((size = getFileFromStream(path, socket)) > 0) {
             strcpy(buffer, "File uploaded successfully!\n");
+            FILEINFO* newFile = createFile(file, size);
+            if(AppendFila2(user->files, (void*)newFile) == 0){
             n = write(socket, buffer, sizeof(buffer));
-            printf("User %s id %d > File %s upload finished!!!\n", user.userid, socket, file);
+            printf("User %s id %d > File %s upload finished and added to filelist\n", user->userid, socket, file);
+        }
 
-            FILEINFO aux = user.files[getUnusedFILEINFO(user)];
-            strcpy(aux.name, file);
-            strcpy(aux.extension, "txt");
-            strcpy(aux.last_modified, getCurrentTime());
-            aux.size = size;
+            // Agora cria uma estrutura file e dá append :)
         }
         else {
             strcpy(buffer, "Error while transfering file. Please, try again\n");
@@ -60,11 +53,26 @@ void receive_file(char* file, int socket, CLIENT user){
     }
 }
 
+void list_files(int socket, CLIENT* user){
+    FirstFila2(user->files);
+    int n;
+    char buffer[MAXCHARS*3] = "";
+    FILEINFO* it;
+    do {
+        it = GetAtIteratorFila2(user->files);
+        strcpy(buffer, it->name);
+        strcat(buffer, ".");
+        strcat(buffer, it->extension);
+        strcat(buffer, "\n");
+        printf("file %s", buffer);
+    } while(user->files->it->next != NULL);
+    n = write(socket, buffer, sizeof(buffer));
+}
 
 // AGORA: Cria o diretório do usuário, caso ele não exista ainda
 // Depois: Cria o diretório e a estrutura cliente e a preenche com os arquivos dentro
 // do diretório
-struct client login_user(char* user){
+void login_user(char* user){
     struct stat st = {0};
     char directory[40];
     strcpy(directory, "./sync_dir_");
@@ -72,12 +80,9 @@ struct client login_user(char* user){
     if (stat(directory, &st) == -1) {
         mkdir(directory, 0700);
     }
-    struct client novo = createClient(user);
-    return novo;
-
 }
 
-void send_file(char*file, int socket, CLIENT user){
+void send_file(char*file, int socket, CLIENT* user){
     char *path = getPath(user, file);
 	FILE *fp = fopen(path, "r");
 	int n, i;
@@ -123,7 +128,8 @@ void* server_loop(void *oldSocket){
     char* fileName;
 	int n;
 	int socket = (int) oldSocket;
-	CLIENT user;
+    char* username;
+	CLIENT* user;
 	while(1){
         /* read from the socket */
         bzero(buffer, 256);
@@ -134,11 +140,12 @@ void* server_loop(void *oldSocket){
             return (void*)-1;
         }
         if(strstr(buffer, "login")){
-            char* username = strtok(buffer, " ");
+            username = strtok(buffer, " ");
             username = strtok(NULL, " ");
-            user = login_user(username);
+            user = createClient(username); 
         }
-        else if(strstr(buffer, "upload")) {   
+        else if(strstr(buffer, "upload")) { 
+            printf("Chegou aqui no upload\n");  
             fileName = parseFilename(buffer);
             receive_file(fileName, socket, user);
 	        }
@@ -152,6 +159,10 @@ void* server_loop(void *oldSocket){
     		pthread_exit(0);
     		break;
 	    }
+	    else if (strstr(buffer, "list")){
+	    	printf("Entrei no list\n");
+	    	list_files(socket, user);
+	    }
 
 	}
 	return (void*) 1;
@@ -160,9 +171,8 @@ void* server_loop(void *oldSocket){
 
 int main(int argc, char *argv[])
 {
-    int sockfd, newsockfd, n;
+    int sockfd, newsockfd;
     socklen_t clilen;
-    char buffer[256];
     struct sockaddr_in serv_addr, cli_addr;
     pthread_t tid[10];
     int threadCount = 0;

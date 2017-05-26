@@ -12,5 +12,5 @@
 #include "dropboxUtil.h"
 
 void sync_server();
-void receive_file(char *file, int socket, CLIENT user);
-void send_file(char *file, int socket, CLIENT user);
+void receive_file(char *file, int socket, CLIENT* user);
+void send_file(char *file, int socket, CLIENT* user);

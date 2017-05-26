@@ -11,7 +11,7 @@
 #include "client.h"
 
 
-#define PORT 4000
+#define PORT 5000
 
  void close_connection(int socket) {
  	int n = write(socket, "exit", strlen("exit"));
@@ -95,6 +95,7 @@ void client_loop(int socket) {
 	    }
 	    else if(strstr(buffer, "list")){
 	    	n = write(socket, buffer, strlen(buffer));
+	    	print_file_list(socket);
 	    }
 	    else if(strstr(buffer, "download")){
 	    	n = write(socket, buffer, strlen(buffer));
@@ -131,6 +132,13 @@ int connect_server(char *host, int port) {
 	if (connect(socketfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         printf("ERROR connecting\n");
     return socketfd;
+}
+
+void print_file_list(int socket){
+	int n;
+	char buffer[MAXCHARS*3];
+		n = read(socket, buffer, sizeof(buffer));
+		printf("%s", buffer);
 }
 
 int main(int argc, char *argv[])

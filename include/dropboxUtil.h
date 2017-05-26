@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include "fila2.h"
+
 #define MAXNAME 30
 #define MAXFILES 30
 #define MAXCHARS 100
@@ -18,7 +20,7 @@ struct file_info {
 struct client {
 	int devices[2];
  	char userid[MAXNAME]; 
- 	struct file_info files[MAXFILES];
+ 	PFILA2 files;
  	int logged_in;
  };
 
@@ -27,15 +29,17 @@ struct client {
 
 int file_size(FILE* fp);
 
-FILEINFO createFile(char* name, char* ext, int size);
-CLIENT createClient(char* name);
+FILEINFO* createFile(char* name,int size);
+CLIENT* createClient(char* name);
 char* getCurrentTime();
 
-FILEINFO findFile(CLIENT user, char* name);
+FILEINFO* findFile(CLIENT* user, char* name);
 int getFileFromStream(char* file, int socket);
 char* parseFilename(char* src);
 int getUnusedFILEINFO(CLIENT user);
-char* getPath(CLIENT user, char*file);
+char* getPath(CLIENT* user, char*file);
+
+void parseNameExt(char* src, char* name, char* ext);
 
 uint32_t
 unpack32(uint8_t *src);

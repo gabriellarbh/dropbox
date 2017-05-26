@@ -15,25 +15,21 @@ int file_size(FILE *fp){
 }
 
 
-CLIENT createClient(char* name) {
-	int i;
-	CLIENT newClient;
-	strcpy(newClient.userid,name);
-	for(i = 0; i < MAXFILES; i++){
-		newClient.files[i] = createFile("", "", -1);
-	}
-	newClient.logged_in = 1;
+CLIENT* createClient(char* name) {
+	CLIENT* newClient = (CLIENT*) malloc(sizeof(CLIENT));
+	strcpy(newClient->userid, name);
+	newClient->files = (PFILA2) malloc(sizeof(FILA2));
+	CreateFila2(newClient->files);
+	newClient->logged_in = 1;
 	return newClient;
 }
 
-/* Cria o arquivo e seta os valores certinhos 
-PONTEIROS ME BEIJEM :( */
-FILEINFO createFile(char* name, char* ext, int size) {
-	FILEINFO newFile;
-	strcpy(newFile.name,name);
-	strcpy(newFile.extension,ext);
-	strcpy(newFile.last_modified, getCurrentTime());
-	newFile.size = size;
+/* Cria o arquivo e seta os valores certinhos  */
+FILEINFO* createFile(char* name,int size) {
+	FILEINFO* newFile = (FILEINFO*) malloc(sizeof(FILEINFO));
+	parseNameExt(name, newFile->name, newFile->extension);
+	strcpy(newFile->last_modified, getCurrentTime());
+	newFile->size = size;
 	return newFile;
 }
 
@@ -45,16 +41,9 @@ char* getCurrentTime() {
 	return asctime (timeinfo);
 }
 
-FILEINFO findFile(CLIENT user, char* name) {
-	int count = 0;
-	FILEINFO it = user.files[0];
-	while((count < MAXFILES) && (it.size > 0)) {
-		if(strstr(name, it.name) && (strstr(name, it.extension)))
-			return it;
-		count++;
-		it = user.files[count];
-	}
-	return it;
+FILEINFO* findFile(CLIENT* user, char* name) {
+	FirstFila2(user->files);
+	FILEINFO* it = (FILEINFO*)GetAtIteratorFila2(user->files);
 }
 
 /* Retorna o índice de um FILEINFO ainda não utilizado
@@ -62,11 +51,6 @@ FILEINFO findFile(CLIENT user, char* name) {
 	MEU DEUS como eu não gosto de array em C
 	lista dinâmica é amor <3 */
 int getUnusedFILEINFO(CLIENT user){
-	int i;
-	for(i = 0; i < MAXFILES; i++){
-		if(user.files[i].size < 0)
-			return i;
-	}
 	return -1;
 }
 
@@ -93,7 +77,6 @@ char* parseFilename(char* src) {
 }
 
 int getFileFromStream(char* file, int socket){
-	FILE* fp = fopen(file, "w+");
 	long int size = 0;
 	int i,n;
     unsigned char* bufferSize;
@@ -104,21 +87,29 @@ int getFileFromStream(char* file, int socket){
     if (size >= SIZE_ERROR){
     	return -1;
     }
-    /* começa a ler da stream, byte a byte, o arquivo */
-    for(i = 0; i < size; i++){
-        n = read(socket, (void*)&buffer, 1);
-        fputc(buffer,fp);
-    }
-    fclose(fp);
-    return 1;
+    else  {
+    	FILE* fp = fopen(file, "w+");
+	    /* começa a ler da stream, byte a byte, o arquivo */
+	    for(i = 0; i < size; i++){
+	        n = read(socket, (void*)&buffer, 1);
+	        fputc(buffer,fp);
+	    }
+	    fclose(fp);
+	    return size;
+	}
 }
-char* getPath(CLIENT user, char*file) {
+char* getPath(CLIENT* user, char*file) {
 	static char path[MAXCHARS];
     strcpy(path, "sync_dir_");
-    strcat(path, user.userid);
+    strcat(path, user->userid);
     strcat(path, "/");
     strcat(path, file);
     return path;
+}
+
+void parseNameExt(char* src, char* name, char* ext){
+	strcpy(name, strtok(src, "."));
+	strcpy(ext, strtok(NULL, "."));
 }
 
 
