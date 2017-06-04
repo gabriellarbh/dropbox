@@ -42,16 +42,14 @@ char* getCurrentTime() {
 }
 
 FILEINFO* findFile(CLIENT* user, char* name) {
+	int nextFilaResult = 0;
 	FirstFila2(user->files);
 	FILEINFO* it = (FILEINFO*)GetAtIteratorFila2(user->files);
-}
-
-/* Retorna o índice de um FILEINFO ainda não utilizado
- 	caso todos estejam full, retorna -1
-	MEU DEUS como eu não gosto de array em C
-	lista dinâmica é amor <3 */
-int getUnusedFILEINFO(CLIENT user){
-	return -1;
+	for(it = (FILEINFO*)GetAtIteratorFila2(user->files); NextFila2(user->files) == 0;){
+		printf("Find %s\n", it->name);
+		it = (FILEINFO*)GetAtIteratorFila2(user->files);
+	}
+	return NULL;
 }
 
 char* parseFilename(char* src) {
@@ -107,6 +105,7 @@ char* getPath(CLIENT* user, char*file) {
     return path;
 }
 
+// Divide a string "filename.ext" em "filename" e "ext"
 void parseNameExt(char* src, char* name, char* ext){
 	strcpy(name, strtok(src, "."));
 	strcpy(ext, strtok(NULL, "."));

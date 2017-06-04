@@ -24,10 +24,9 @@ void receive_file(char* file, int socket, CLIENT* user){
             n = write(socket, buffer, sizeof(buffer));
             printf("User %s id %d > File %s finished!!!\n", user->userid,socket,file);
 
-
-
             // Como o arquivo existe, a estrutura FILEINFO também já existe
             // logo, a atualiza com o novo time stamp
+         //   findFile(user, "aa");
         }
         else {
             strcpy(buffer, "Error while transfering file. Please, try again\n");
@@ -144,9 +143,9 @@ void* server_loop(void *oldSocket){
             username = strtok(buffer, " ");
             username = strtok(NULL, " ");
             user = createClient(username); 
+            login_user(username);
         }
         else if(strstr(buffer, "upload")) { 
-            printf("Chegou aqui no upload\n");  
             fileName = parseFilename(buffer);
             receive_file(fileName, socket, user);
 	        }
