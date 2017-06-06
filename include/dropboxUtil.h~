@@ -41,4 +41,6 @@ char* getPath(CLIENT* user, char*file);
 
 void parseNameExt(char* src, char* name, char* ext);
 
+uint32_t
+unpack32(uint8_t *src);
 

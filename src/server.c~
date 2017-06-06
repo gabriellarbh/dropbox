@@ -191,10 +191,10 @@ int main(int argc, char *argv[])
 	    }
 	    else {
 		*arg = newsockfd;
-		pthread_t newThread;
-		pthread_create(&newThread, NULL, server_loop, arg);
+		pthread_t teste;
+		pthread_create(&teste, NULL, server_loop, arg);
 	    	threadCount++;
-    		pthread_join(newThread, NULL);
+    		pthread_join(teste, NULL);
 	    }
 	}
     close(sockfd);
