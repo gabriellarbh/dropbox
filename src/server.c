@@ -59,7 +59,7 @@ void receive_file(char* file, int socket, CLIENT* user){
 void list_files(int socket, CLIENT* user){
     char buffer[MAXCHARS*3] = "";
     int n;
-    if(FirstFila2(user->files)){
+    if(!(FirstFila2(user->files))){
         FILEINFO* it;
         do{
             it = GetAtIteratorFila2(user->files);

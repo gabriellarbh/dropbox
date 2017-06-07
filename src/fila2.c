@@ -14,11 +14,11 @@ int CreateFila2(PFILA2 pFila) {
 int	FirstFila2(PFILA2 pFila) {
     //Testa se a fila existe e se há um first element na fila
     if(pFila == NULL || pFila->first == NULL)
-        return 0;
+        return 1;
     //Fila existente e não-vazia.
     else {
         pFila->it = pFila->first;
-        return 1;
+        return 0;
     }
 }
 
