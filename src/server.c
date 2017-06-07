@@ -58,7 +58,7 @@ void receive_file(char* file, int socket, CLIENT* user){
 //List file on clients remote directory
 void list_files(int socket, CLIENT* user){
     char buffer[MAXCHARS*3] = "";
-    int n;
+    int n, i = 0;
     if(!(FirstFila2(user->files))){
         FILEINFO* it;
         do{
@@ -67,9 +67,11 @@ void list_files(int socket, CLIENT* user){
             strcat(buffer, ".");
             strcat(buffer, it->extension);
             strcat(buffer, "\n");
-            printf("file %s", buffer);
-            
+            printf("%d\n", i);
+            i++;
         } while(!NextFila2(user->files));
+
+        printf("file %s\n", buffer);
         n = write(socket, buffer, sizeof(buffer));
     } else {
         printf("No files on client directory to list\n");
@@ -125,9 +127,12 @@ int login_user(CLIENT* user, int socket){
                 FILE* newFile = fopen(ent->d_name, "r");
                 if((newFile) && (strlen(filename) > 3)){
                    size = file_size(newFile);
-                   fileAux = createFile(ent->d_name, size);
-                    if(!AppendFila2(user->files, fileAux))
-                        printf ("File %s successfully added to client %s\n", filename, user->userid);
+                   fileAux = findFile(user,filename);
+                   if(fileAux == NULL){
+                        fileAux = createFile(filename, size);
+                        if(!AppendFila2(user->files, fileAux))
+                            printf ("File %s successfully added to client %s\n", filename, user->userid);
+                   }
                 }
                 fclose(newFile);
             }

@@ -74,7 +74,6 @@ void client_loop(int socket) {
 	int n;
 	char* fileName;
     char buffer[256];
-    CreateFila2(fileList);
 	while(1){
     	bzero(buffer, 256);
         printf("client > ");
@@ -138,10 +137,11 @@ int connect_server(char *host, int port) {
 
 void print_file_list(int socket){
 	int n;
-	char buffer[MAXCHARS*3];
+	char buffer[1000];
 		n = read(socket, buffer, sizeof(buffer));
 		printf("%s", buffer);
 }
+
 
 int main(int argc, char *argv[])
 {

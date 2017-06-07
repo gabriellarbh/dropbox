@@ -51,8 +51,6 @@ FILEINFO* findFile(CLIENT* user, char* name) {
         if((it) &&(strstr(name, it->name) && strstr(name, it->extension))){
         	return it;
         }
-        else
-        	break;
 
     } while(!NextFila2(user->files));
 	return NULL;
@@ -65,8 +63,6 @@ CLIENT* findClient(PFILA2 clientsList, char* name){
 		it = GetAtIteratorFila2(clientsList);
 		if((it) && (strcmp(it->userid, name) == 0))
 			return it;
-		else
-			break;
 	} while(!NextFila2(clientsList));
 	return NULL;
 }

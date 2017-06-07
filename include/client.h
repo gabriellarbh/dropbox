@@ -1,6 +1,6 @@
 #include "dropboxUtil.h"
 #include <dirent.h>
-PFILA2 fileList;
+char fileListBuffer[1000];
 
  int connect_server(char *host, int port);
  void sync_client();
