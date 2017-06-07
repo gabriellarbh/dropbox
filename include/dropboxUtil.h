@@ -23,7 +23,7 @@ struct client {
  	char userid[MAXNAME]; 
  	PFILA2 files;
  	int logged_in;
- 	dispatch_semaphore_t connection;
+ 	dispatch_semaphore_t connections;
  };
 
  typedef struct client CLIENT;

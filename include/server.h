@@ -10,6 +10,7 @@
 #include <netdb.h> 
 #include <pthread.h>
 
+#include <dispatch/dispatch.h>
 #include "dropboxUtil.h"
 
 PFILA2 clientsList;

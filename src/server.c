@@ -18,7 +18,17 @@ void receive_file(char* file, int socket, CLIENT* user){
 
             // Como o arquivo existe, a estrutura FILEINFO também já existe
             // logo, a atualiza com o novo time stamp
-         //   findFile(user, "aa");
+            FILEINFO* newFile = findFile(user, file);
+            if(newFile){
+                strcpy(newFile->last_modified, getCurrentTime());
+                printf("File structure updated successfully!\n");
+            }
+            else {
+                newFile = createFile(file, size);
+                if(AppendFila2(user->files, newFile) ==0){
+                    printf("File structured created successfully\n");
+                }
+            }
         }
         else {
             strcpy(buffer, "Error while transfering file. Please, try again\n");
@@ -31,8 +41,8 @@ void receive_file(char* file, int socket, CLIENT* user){
             strcpy(buffer, "File uploaded successfully!\n");
             FILEINFO* newFile = createFile(file, size);
             if(AppendFila2(user->files, (void*)newFile) == 0){
-            n = write(socket, buffer, sizeof(buffer));
-            printf("User %s id %d > File %s upload finished and added to filelist\n", user->userid, socket, file);
+                n = write(socket, buffer, sizeof(buffer));
+                printf("User %s id %d > File %s upload finished and added to filelist\n", user->userid, socket, file);
         }
 
             // Agora cria uma estrutura file e dá append :)
