@@ -78,16 +78,47 @@ void list_files(int socket, CLIENT* user){
     }
 }
 
-// Creates user directory in case it doesn't exist
-// After, creates directory and client structure, with directory files
-void login_user(char* user){
-    struct stat st = {0};
-    char directory[40];
-    strcpy(directory, "./sync_dir_");
-    strcat(directory, user);
-    if (stat(directory, &st) == -1) {
-        mkdir(directory, 0700);
+int registerSocket(int socket, CLIENT* user){
+    int returnValue = 0;
+    pthread_mutex_lock(&mutexDevicesRegister);
+    if(user->devices[0] < 0){
+        user->devices[0] = socket;
+        returnValue = 1;
     }
+    else if (user->devices[1] < 0){
+        user->devices[1] = socket;
+        returnValue = 1;
+    }
+    pthread_mutex_unlock(&mutexDevicesRegister);
+    return returnValue;
+}
+
+void deregisterSocket(int socket, CLIENT* user){
+    if(user->devices[0] == socket)
+        user->devices[0] = -1;
+    else if (user->devices[1] == socket)
+        user->devices[1] = -1;
+}
+
+
+// Depois: Cria o diretório e a estrutura cliente e a preenche com os arquivos dentro
+// do diretório
+int login_user(CLIENT* user, int socket){
+    printf("1) Login_user dev 1 %d, dev 2 %d\n", user->devices[0],user->devices[1]);
+    if(registerSocket(socket, user)){
+        struct stat st = {0};
+        char directory[40];
+        strcpy(directory, "./sync_dir_");
+        strcat(directory, user->userid);
+        if (stat(directory, &st) == -1) {
+            mkdir(directory, 0700);
+        }
+
+        printf("2) Login_user dev 1 %d, dev 2 %d\n", user->devices[0],user->devices[1]);
+        return 1;
+    }
+    else
+        return 0;   
 }
 
 CLIENT* getClient(char* user){
@@ -162,7 +193,13 @@ void* server_loop(void* oldSocket){
             username = strtok(buffer, " ");
             username = strtok(NULL, " ");
             user = getClient(username);
-            login_user(username);
+            if(!login_user(user, socket)) {
+                n = write(socket, "FAIL", sizeof("FAIL"));
+                strcpy(buffer, "exit");
+            }
+            else {
+                n = write(socket, "OK", sizeof("OK"));
+            }
         }
         else if(strstr(buffer, "upload")) { 
             fileName = parseFilename(buffer);
@@ -175,6 +212,7 @@ void* server_loop(void* oldSocket){
 	    else if (strstr(buffer, "exit")){
 	    	printf("Closing client with id %d\n", socket);
     		close(socket);
+            deregisterSocket(socket, user);
     		pthread_exit(0);
     		break;
 	    }
@@ -196,8 +234,12 @@ int main(int argc, char *argv[])
     int threadCount = 0;
     int port;
 	int *arg = (int*)malloc(sizeof(*arg));
+    // Criação da lista de clientes geral do servidor
     clientsList = (PFILA2) malloc(sizeof(FILA2));
     CreateFila2(clientsList);
+
+    // Criação do mutex de registro de sockets
+    pthread_mutex_init(&mutexDevicesRegister, NULL);
     //pid_t pid;
 
     if(argc < 2){
@@ -231,11 +273,11 @@ int main(int argc, char *argv[])
 	        printf("ERROR on accept\n");
 	    }
 	    else {
-		*arg = newsockfd;
-		pthread_t newThread;
-		pthread_create(&newThread, NULL, server_loop, arg);
-	    	threadCount++;
-    		pthread_join(newThread, NULL);
+    		*arg = newsockfd;
+            printf("SOCKET %d\n", newsockfd);
+    		pthread_create(&tid[threadCount], NULL, server_loop, arg);
+            threadCount++;
+            printf("Criou a thread\n");
 	    }
 	}
     close(sockfd);

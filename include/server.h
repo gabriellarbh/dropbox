@@ -14,6 +14,7 @@
 #include "dropboxUtil.h"
 
 PFILA2 clientsList;
+pthread_mutex_t mutexDevicesRegister = PTHREAD_MUTEX_INITIALIZER;
 
 void sync_server();
 void receive_file(char *file, int socket, CLIENT* user);

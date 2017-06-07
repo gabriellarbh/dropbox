@@ -144,6 +144,7 @@ void print_file_list(int socket){
 
 int main(int argc, char *argv[])
 {
+	char buffer[MAXCHARS];
     if (argc < 4) {
 		printf("Usage: ./client username hostname port");
 		exit(0);
@@ -156,7 +157,12 @@ int main(int argc, char *argv[])
     strcat(username, argv[1]);
     int n = write(socket, username, strlen(username));
 
-    client_loop(socket);
+    n = read(socket, buffer, sizeof(buffer));
+    if((n > 0) && (strstr(buffer, "OK")))
+    	client_loop(socket);
+    else {
+    	printf("You already have two devices connected. Please, disconnect from one and try again!\n");
+    }
    	printf("Connection closed. Terminating the program\n");
     return 0;
 }
