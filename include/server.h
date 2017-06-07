@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <pthread.h>
-
+#include <dirent.h>
 #include <dispatch/dispatch.h>
 #include "dropboxUtil.h"
 

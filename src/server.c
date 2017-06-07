@@ -104,17 +104,35 @@ void deregisterSocket(int socket, CLIENT* user){
 // Depois: Cria o diretório e a estrutura cliente e a preenche com os arquivos dentro
 // do diretório
 int login_user(CLIENT* user, int socket){
-    printf("1) Login_user dev 1 %d, dev 2 %d\n", user->devices[0],user->devices[1]);
     if(registerSocket(socket, user)){
         struct stat st = {0};
         char directory[40];
         strcpy(directory, "./sync_dir_");
         strcat(directory, user->userid);
+        DIR *dir;
+        int size = -1;
+        struct dirent *ent;
+        FILEINFO* fileAux;
+        char filename[256];
+        // Directory doesnt exist, so creates one
         if (stat(directory, &st) == -1) {
             mkdir(directory, 0700);
         }
-
-        printf("2) Login_user dev 1 %d, dev 2 %d\n", user->devices[0],user->devices[1]);
+        // Directory already exists
+        else if ((dir = opendir (directory)) != NULL) {
+            while ((ent = readdir (dir)) != NULL) {
+                strcpy(filename, ent->d_name);
+                FILE* newFile = fopen(ent->d_name, "r");
+                if((newFile) && (strlen(filename) > 3)){
+                   size = file_size(newFile);
+                   fileAux = createFile(ent->d_name, size);
+                    if(!AppendFila2(user->files, fileAux))
+                        printf ("File %s successfully added to client %s\n", filename, user->userid);
+                }
+                fclose(newFile);
+            }
+            closedir (dir);
+        }
         return 1;
     }
     else
@@ -194,10 +212,12 @@ void* server_loop(void* oldSocket){
             username = strtok(NULL, " ");
             user = getClient(username);
             if(!login_user(user, socket)) {
+                // Signals the client that his connection was not permitted
                 n = write(socket, "FAIL", sizeof("FAIL"));
                 strcpy(buffer, "exit");
             }
             else {
+                // Everythings is ok while logging the user!
                 n = write(socket, "OK", sizeof("OK"));
             }
         }

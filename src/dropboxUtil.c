@@ -23,7 +23,6 @@ CLIENT* createClient(char* name) {
 	newClient->logged_in = 1;
 	newClient->devices[0] = -1;
 	newClient->devices[1] = -1;
-	newClient->connections = dispatch_semaphore_create(2);
 	return newClient;
 }
 

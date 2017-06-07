@@ -74,6 +74,7 @@ void client_loop(int socket) {
 	int n;
 	char* fileName;
     char buffer[256];
+    CreateFila2(fileList);
 	while(1){
     	bzero(buffer, 256);
         printf("client > ");
