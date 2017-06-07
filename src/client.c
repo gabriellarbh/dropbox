@@ -18,6 +18,7 @@
 	close(socket);
  }
 
+//Download file from remote directory
 void receive_file(char* file, int socket){
     int n;
     char buffer[256];
@@ -31,6 +32,7 @@ void receive_file(char* file, int socket){
     }
 }
 
+//Upload file to remote directory
 void send_file(char *file, int socket) {
 	FILE *fp = fopen(file, "r");
 	int n, count = 0;
@@ -47,7 +49,6 @@ void send_file(char *file, int socket) {
 	}
 	// Valid file, starts the stream to the server
 	else {
-		//printf("Tamanho do arquivo %ld\n", size);  // CUIDAR LITTLE ENDIAN E BIG ENDIAN PQ O ALBERTO VAI RECLAMAR
 		// First passes the size of the file to the server
 		bufferSize = (unsigned char*) &size;
 		n = write(socket, (void*)bufferSize, 4);

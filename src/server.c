@@ -1,12 +1,13 @@
 #include "server.h"
 #define PORT 5000
 
+//Receives file uploaded by client
 void receive_file(char* file, int socket, CLIENT* user){
     long int size = 0;
     char buffer[256];
     int n;
     char *path = getPath(user, file);
-	FILE* fp = fopen(path, "r+");    //  <- deve-se usar essa, mas a motivos de teste fiz um novo arquivo.
+	FILE* fp = fopen(path, "r+");
     if (fp){
         fclose(fp);
         if((size = getFileFromStream(path, socket)) > 0) {
@@ -54,26 +55,31 @@ void receive_file(char* file, int socket, CLIENT* user){
     }
 }
 
+//List file on clients remote directory
 void list_files(int socket, CLIENT* user){
-    FirstFila2(user->files);
-    int n;
     char buffer[MAXCHARS*3] = "";
-    FILEINFO* it;
-   do{
-        it = GetAtIteratorFila2(user->files);
-        strcat(buffer, it->name);
-        strcat(buffer, ".");
-        strcat(buffer, it->extension);
-        strcat(buffer, "\n");
-        printf("file %s", buffer);
-
-    } while(!NextFila2(user->files));
-    n = write(socket, buffer, sizeof(buffer));
+    int n;
+    if(FirstFila2(user->files)){
+        FILEINFO* it;
+        do{
+            it = GetAtIteratorFila2(user->files);
+            strcat(buffer, it->name);
+            strcat(buffer, ".");
+            strcat(buffer, it->extension);
+            strcat(buffer, "\n");
+            printf("file %s", buffer);
+            
+        } while(!NextFila2(user->files));
+        n = write(socket, buffer, sizeof(buffer));
+    } else {
+        printf("No files on client directory to list\n");
+        strcpy(buffer, "No files on remote directory\n");
+        n = write(socket, buffer, sizeof(buffer));
+    }
 }
 
-// AGORA: Cria o diretório do usuário, caso ele não exista ainda
-// Depois: Cria o diretório e a estrutura cliente e a preenche com os arquivos dentro
-// do diretório
+// Creates user directory in case it doesn't exist
+// After, creates directory and client structure, with directory files
 void login_user(char* user){
     struct stat st = {0};
     char directory[40];
@@ -94,7 +100,7 @@ CLIENT* getClient(char* user){
     return newClient;
 
 }
-
+//Sends file for client to download
 void send_file(char*file, int socket, CLIENT* user){
     char *path = getPath(user, file);
 	FILE *fp = fopen(path, "r");
@@ -109,7 +115,7 @@ void send_file(char*file, int socket, CLIENT* user){
         bufferSize = (unsigned char*) &size;
         n = write(socket, (void*)bufferSize, 4);
         if (n < 0)
-            printf("Deu erro na conexão");
+            printf("Connection error");
 		return;
 	}
 	// Valid file, starts the stream to the server
@@ -201,17 +207,23 @@ int main(int argc, char *argv[])
 
     port = atoi(argv[1]);
 
-    
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    //Opens Socket
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
         printf("ERROR opening socket\n");
+        return -1;
+    }
     
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     bzero(&(serv_addr.sin_zero), 8);
     
-    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+    //Binds Socket
+    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0){
         printf("ERROR on binding\n");
+        return -1;
+    }
+    //Server in listen state
     while(1){
 	    listen(sockfd, 5);
 	    clilen = sizeof(struct sockaddr_in);
