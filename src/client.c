@@ -147,7 +147,8 @@ int main(int argc, char *argv[])
 		printf("Usage: ./client username hostname port");
 		exit(0);
     }
-    int socket = connect_server(argv[2], PORT);
+    int port = atoi(argv[3]);
+    int socket = connect_server(argv[2], port);
     // Faz a conexão do usuário com o servidor
     char username[40];
     strcpy(username, "login ");

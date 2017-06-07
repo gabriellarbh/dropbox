@@ -21,6 +21,9 @@ CLIENT* createClient(char* name) {
 	newClient->files = (PFILA2) malloc(sizeof(FILA2));
 	CreateFila2(newClient->files);
 	newClient->logged_in = 1;
+	newClient->devices[0] = -1;
+	newClient->devices[1] = -1;
+	newClient->connections = dispatch_semphore_create(2);
 	return newClient;
 }
 
@@ -42,13 +45,30 @@ char* getCurrentTime() {
 }
 
 FILEINFO* findFile(CLIENT* user, char* name) {
-	int nextFilaResult = 0;
 	FirstFila2(user->files);
-	FILEINFO* it = (FILEINFO*)GetAtIteratorFila2(user->files);
-	for(it = (FILEINFO*)GetAtIteratorFila2(user->files); NextFila2(user->files) == 0;){
-		printf("Find %s\n", it->name);
-		it = (FILEINFO*)GetAtIteratorFila2(user->files);
-	}
+	FILEINFO* it;
+   do{
+        it = GetAtIteratorFila2(user->files);
+        if((it) &&(strstr(name, it->name) && strstr(name, it->extension))){
+        	return it;
+        }
+        else
+        	break;
+
+    } while(!NextFila2(user->files));
+	return NULL;
+}
+
+CLIENT* findClient(PFILA2 clientsList, char* name){
+	FirstFila2(clientsList);
+	CLIENT* it;
+	do {
+		it = GetAtIteratorFila2(clientsList);
+		if((it) && (strcmp(it->userid, name) == 0))
+			return it;
+		else
+			break;
+	} while(!NextFila2(clientsList));
 	return NULL;
 }
 

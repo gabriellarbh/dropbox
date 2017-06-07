@@ -12,6 +12,8 @@
 
 #include "dropboxUtil.h"
 
+PFILA2 clientsList;
+
 void sync_server();
 void receive_file(char *file, int socket, CLIENT* user);
 void send_file(char *file, int socket, CLIENT* user);

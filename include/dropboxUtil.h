@@ -4,6 +4,7 @@
 #include <time.h>
 #include <string.h>
 #include "fila2.h"
+#include <dispatch/dispatch.h>
 
 #define MAXNAME 30
 #define MAXFILES 30
@@ -22,6 +23,7 @@ struct client {
  	char userid[MAXNAME]; 
  	PFILA2 files;
  	int logged_in;
+ 	dispatch_semaphore_t connection;
  };
 
  typedef struct client CLIENT;
@@ -34,6 +36,8 @@ CLIENT* createClient(char* name);
 char* getCurrentTime();
 
 FILEINFO* findFile(CLIENT* user, char* name);
+CLIENT* findClient(PFILA2 clientsList, char* name);
+
 int getFileFromStream(char* file, int socket);
 char* parseFilename(char* src);
 int getUnusedFILEINFO(CLIENT user);

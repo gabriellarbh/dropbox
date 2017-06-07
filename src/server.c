@@ -65,7 +65,6 @@ void list_files(int socket, CLIENT* user){
 // Depois: Cria o diretório e a estrutura cliente e a preenche com os arquivos dentro
 // do diretório
 void login_user(char* user){
-printf("entrei na login");
     struct stat st = {0};
     char directory[40];
     strcpy(directory, "./sync_dir_");
@@ -73,6 +72,17 @@ printf("entrei na login");
     if (stat(directory, &st) == -1) {
         mkdir(directory, 0700);
     }
+}
+
+CLIENT* getClient(char* user){
+    CLIENT* newClient = findClient(clientsList, user);
+    if(!newClient){
+        newClient = createClient(user); 
+        AppendFila2(clientsList, newClient);
+    }
+
+    return newClient;
+
 }
 
 void send_file(char*file, int socket, CLIENT* user){
@@ -117,7 +127,6 @@ void send_file(char*file, int socket, CLIENT* user){
 }
 
 void* server_loop(void* oldSocket){
-printf("ERROR reading from socket");
 	char buffer[256];
     char* fileName;
 	int n;
@@ -136,7 +145,7 @@ printf("ERROR reading from socket");
         if(strstr(buffer, "login")){
             username = strtok(buffer, " ");
             username = strtok(NULL, " ");
-            user = createClient(username); 
+            user = getClient(username);
             login_user(username);
         }
         else if(strstr(buffer, "upload")) { 
@@ -154,7 +163,6 @@ printf("ERROR reading from socket");
     		break;
 	    }
 	    else if (strstr(buffer, "list")){
-	    	printf("Entrei no list\n");
 	    	list_files(socket, user);
 	    }
 
@@ -170,14 +178,25 @@ int main(int argc, char *argv[])
     struct sockaddr_in serv_addr, cli_addr;
     pthread_t tid[10];
     int threadCount = 0;
+    int port;
 	int *arg = (int*)malloc(sizeof(*arg));
+    clientsList = (PFILA2) malloc(sizeof(FILA2));
+    CreateFila2(clientsList);
     //pid_t pid;
+
+    if(argc < 2){
+        printf("Use ./server port-num to start the server\n");
+        return 0;
+    }
+
+    port = atoi(argv[1]);
+
     
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         printf("ERROR opening socket\n");
     
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT);
+    serv_addr.sin_port = htons(port);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     bzero(&(serv_addr.sin_zero), 8);
     
