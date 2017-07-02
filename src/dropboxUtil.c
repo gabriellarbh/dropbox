@@ -28,11 +28,15 @@ CLIENT* createClient(char* name) {
 
 /* Cria o arquivo e seta os valores certinhos  */
 FILEINFO* createFile(char* name,int size) {
-	FILEINFO* newFile = (FILEINFO*) malloc(sizeof(FILEINFO));
-	parseNameExt(name, newFile->name, newFile->extension);
-	strcpy(newFile->last_modified, getCurrentTime());
-	newFile->size = size;
-	return newFile;
+	if(strstr(name,".")){
+		FILEINFO* newFile = (FILEINFO*) malloc(sizeof(FILEINFO));
+		parseNameExt(name, newFile->name, newFile->extension);
+		strcpy(newFile->last_modified, getCurrentTime());
+		newFile->size = size;
+		return newFile;
+	}
+	else
+		return NULL;
 }
 
 char* getCurrentTime() {

@@ -21,5 +21,7 @@ fila2.o: ./src/fila2.c ./include/fila2.h
 clean:
 	rm *.o server client
 	rm lib/*.a
+	rm .DS_STORE
 cleanTXT:
 	rm -rf *.txt
+

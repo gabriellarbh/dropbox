@@ -100,6 +100,13 @@ void deregisterSocket(int socket, CLIENT* user){
         user->devices[0] = -1;
     else if (user->devices[1] == socket)
         user->devices[1] = -1;
+
+    if((user->devices[0] < 0)  && (user->devices[1] < 0)){
+        CLIENT* try = findClient(clientsList, user->userid);
+        DeleteAtIteratorFila2(clientsList);
+        free(try);
+        FirstFila2(clientsList);
+    }
 }
 
 
@@ -130,7 +137,9 @@ int login_user(CLIENT* user, int socket){
                    fileAux = findFile(user,filename);
                    if(fileAux == NULL){
                         fileAux = createFile(filename, size);
-                        if(!AppendFila2(user->files, fileAux))
+                        if(fileAux == NULL)
+                            break;
+                        else    if(!AppendFila2(user->files, fileAux))
                             printf ("File %s successfully added to client %s\n", filename, user->userid);
                    }
                 }
@@ -145,12 +154,14 @@ int login_user(CLIENT* user, int socket){
 }
 
 CLIENT* getClient(char* user){
+	pthread_mutex_lock(&mutexClientRegister);
     CLIENT* newClient = findClient(clientsList, user);
     if(!newClient){
         newClient = createClient(user); 
         AppendFila2(clientsList, newClient);
     }
 
+	pthread_mutex_unlock(&mutexClientRegister);
     return newClient;
 
 }
@@ -215,6 +226,7 @@ void* server_loop(void* oldSocket){
         if(strstr(buffer, "login")){
             username = strtok(buffer, " ");
             username = strtok(NULL, " ");
+
             user = getClient(username);
             if(!login_user(user, socket)) {
                 // Signals the client that his connection was not permitted
@@ -265,6 +277,8 @@ int main(int argc, char *argv[])
 
     // Criação do mutex de registro de sockets
     pthread_mutex_init(&mutexDevicesRegister, NULL);
+    // Criação do mutex de registro de novos clientes (Sugestao do prof.)
+    pthread_mutex_init(&mutexClientRegister, NULL);
     //pid_t pid;
 
     if(argc < 2){
