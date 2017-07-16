@@ -303,6 +303,19 @@ int main(int argc, char *argv[])
 		abort();
 	}
 
+	if(!SSL_CTX_use_certificate_file(ctx,"CertFile.pem", SSL_FILETYPE_PEM)) {
+		printf("Error with CertFile. Aborting\n");
+		return -1;
+	}
+
+	if(!SSL_CTX_use_PrivateKey_file(ctx, "PrivateKey.pem", SSL_FILETYPE_PEM)){
+		printf("Error with PrivateKey. Abortin\n");
+		return -1;
+
+	}
+
+
+
 
 	int *arg = (int*)malloc(sizeof(*arg));
     // Criação da lista de clientes geral do servidor
@@ -346,6 +359,8 @@ int main(int argc, char *argv[])
 	        printf("ERROR on accept\n");
 	    }
 	    else {
+		SSL* ssl = SSL_new(ctx);
+		SSL_set_fd(ssl, sockfd);
     		*arg = newsockfd;
             printf("SOCKET %d\n", newsockfd);
     		pthread_create(&tid[threadCount], NULL, server_loop, arg);
