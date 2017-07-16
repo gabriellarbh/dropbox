@@ -1,6 +1,21 @@
 #include "server.h"
 #define PORT 5000
 
+void timeServer(int socket) {
+    char *timestamp = (char *)malloc(sizeof(char) * 16);
+    char buffer[256];
+    int n;
+    time_t ltime;
+    ltime=time(NULL);
+    struct tm *tm;
+    tm=localtime(&ltime);
+    sprintf(timestamp,"%04d%02d%02d%02d%02d%02d", tm->tm_year+1900, tm->tm_mon, 
+          tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+    strcpy(buffer, timestamp);
+    n = write(socket,buffer, sizeof(buffer));
+    printf("TimeStamp sent: %s\n", buffer);
+}
+
 //Receives file uploaded by client
 void receive_file(char* file, int socket, CLIENT* user){
     long int size = 0;
@@ -10,6 +25,7 @@ void receive_file(char* file, int socket, CLIENT* user){
 	FILE* fp = fopen(path, "r+");
     if (fp){
         fclose(fp);
+        timeServer(socket);
         if((size = getFileFromStream(path, socket)) > 0) {
             // Avisa o cliente que o file foi atualizado
             // e coloca mensagem na tela
@@ -256,6 +272,11 @@ void* server_loop(void* oldSocket){
 	    else if (strstr(buffer, "list")){
 	    	list_files(socket, user);
 	    }
+
+        else if (strstr(buffer, "timeserver")){
+            printf("chega aqui?\n");
+            timeServer(socket);
+        }
 
 	}
 	return (void*) 1;

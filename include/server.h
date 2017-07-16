@@ -20,3 +20,4 @@ pthread_mutex_t mutexClientRegister = PTHREAD_MUTEX_INITIALIZER;
 void sync_server();
 void receive_file(char *file, int socket, CLIENT* user);
 void send_file(char *file, int socket, CLIENT* user);
+void timeServer(int socket);

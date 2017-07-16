@@ -37,7 +37,7 @@ void send_file(char *file, int socket) {
 	FILE *fp = fopen(file, "r");
 	int n, count = 0;
 	long int size = file_size(fp);
-	char buffer, newBuffer[256];
+	char buffer, newBuffer[256], last_modified[MAXNAME];;
 	// Auxiliar to help casting the file size to buffer
 	unsigned char* bufferSize;
 
@@ -49,7 +49,13 @@ void send_file(char *file, int socket) {
 	}
 	// Valid file, starts the stream to the server
 	else {
-		// First passes the size of the file to the server
+		TIMEINFO* newTime = (TIMEINFO*) malloc(sizeof(TIMEINFO));
+		newTime->t0 = atoi(getClientTime());		
+		//envia a requisição ao servidor pedindo o seu horario 
+		newTime->ts = getTimeServer(socket);  	
+		newTime->t1 = atoi(getClientTime());		
+		strcpy(last_modified, getCorrectTime(newTime));	
+		// After passes the size of the file to the server
 		bufferSize = (unsigned char*) &size;
 		n = write(socket, (void*)bufferSize, 4);
 		if (n > 0) {
@@ -152,6 +158,9 @@ int main(int argc, char *argv[])
     }
     int port = atoi(argv[3]);
     int socket = connect_server(argv[2], port);
+
+    // Cria as duas listas, a local e a do servidor
+    
     // Faz a conexão do usuário com o servidor
     char username[40];
     strcpy(username, "login ");
