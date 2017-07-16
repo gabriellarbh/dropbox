@@ -19,7 +19,13 @@ PFILA2 clientsList;
 pthread_mutex_t mutexDevicesRegister = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexClientRegister = PTHREAD_MUTEX_INITIALIZER;
 
+struct serverLoopParams {
+	int socket;
+	SSL* ssl;
+};
+
+typedef struct serverLoopParams ARGS;
 void sync_server();
-void receive_file(char *file, int socket, CLIENT* user);
-void send_file(char *file, int socket, CLIENT* user);
-void timeServer(int socket);
+void receive_file(char* file, int socket,SSL* ssl, CLIENT* user);
+void timeServer(SSL* ssl);
+void send_file(char*file, int socket, SSL* ssl, CLIENT* user);

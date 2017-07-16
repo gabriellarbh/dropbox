@@ -1,7 +1,7 @@
 #include "server.h"
 #define PORT 5000
 
-void timeServer(int socket) {
+void timeServer(SSL* ssl) {
     char *timestamp = (char *)malloc(sizeof(char) * 16);
     char buffer[256];
     int n;
@@ -12,12 +12,12 @@ void timeServer(int socket) {
     sprintf(timestamp,"%04d%02d%02d%02d%02d%02d", tm->tm_year+1900, tm->tm_mon, 
           tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
     strcpy(buffer, timestamp);
-    n = write(socket,buffer, sizeof(buffer));
+    n = SSL_write(ssl,buffer, sizeof(buffer));
     printf("TimeStamp sent: %s\n", buffer);
 }
 
 //Receives file uploaded by client
-void receive_file(char* file, int socket, CLIENT* user){
+void receive_file(char* file, int socket,SSL* ssl, CLIENT* user){
     long int size = 0;
     char buffer[256];
     int n;
@@ -25,12 +25,12 @@ void receive_file(char* file, int socket, CLIENT* user){
 	FILE* fp = fopen(path, "r+");
     if (fp){
         fclose(fp);
-        timeServer(socket);
-        if((size = getFileFromStream(path, socket)) > 0) {
+        timeServer(ssl);
+        if((size = getFileFromStreamSSL(path,socket, ssl)) > 0) {
             // Avisa o cliente que o file foi atualizado
             // e coloca mensagem na tela
             strcpy(buffer, "File updated successfully!\n");
-            n = write(socket, buffer, sizeof(buffer));
+            n = SSL_write(ssl, buffer, sizeof(buffer));
             printf("User %s id %d > File %s finished!!!\n", user->userid,socket,file);
 
             // Como o arquivo existe, a estrutura FILEINFO também já existe
@@ -49,7 +49,7 @@ void receive_file(char* file, int socket, CLIENT* user){
         }
         else {
             strcpy(buffer, "Error while transfering file. Please, try again\n");
-            n = write(socket, buffer, sizeof(buffer));
+            n = SSL_write(ssl, buffer, sizeof(buffer));
         } 
     }
     // File não existe no servidor. Cria o arquivo e a estrutura
@@ -58,7 +58,7 @@ void receive_file(char* file, int socket, CLIENT* user){
             strcpy(buffer, "File uploaded successfully!\n");
             FILEINFO* newFile = createFile(file, size);
             if(AppendFila2(user->files, (void*)newFile) == 0){
-                n = write(socket, buffer, sizeof(buffer));
+                n = SSL_write(ssl, buffer, sizeof(buffer));
                 printf("User %s id %d > File %s upload finished and added to filelist\n", user->userid, socket, file);
         }
 
@@ -66,13 +66,13 @@ void receive_file(char* file, int socket, CLIENT* user){
         }
         else {
             strcpy(buffer, "Error while transfering file. Please, try again\n");
-            n = write(socket, buffer, sizeof(buffer));
+            n = SSL_write(ssl, buffer, sizeof(buffer));
         }
     }
 }
 
 //List file on clients remote directory
-void list_files(int socket, CLIENT* user){
+void list_files(int socket,SSL* ssl, CLIENT* user){
     char buffer[MAXCHARS*3] = "";
     int n, i = 0;
     if(!(FirstFila2(user->files))){
@@ -88,11 +88,11 @@ void list_files(int socket, CLIENT* user){
         } while(!NextFila2(user->files));
 
         printf("file %s\n", buffer);
-        n = write(socket, buffer, sizeof(buffer));
+        n = SSL_write(ssl, buffer, sizeof(buffer));
     } else {
         printf("No files on client directory to list\n");
         strcpy(buffer, "No files on remote directory\n");
-        n = write(socket, buffer, sizeof(buffer));
+        n = SSL_write(ssl, buffer, sizeof(buffer));
     }
 }
 
@@ -182,7 +182,7 @@ CLIENT* getClient(char* user){
 
 }
 //Sends file for client to download
-void send_file(char*file, int socket, CLIENT* user){
+void send_file(char*file, int socket, SSL* ssl, CLIENT* user){
     char *path = getPath(user, file);
 	FILE *fp = fopen(path, "r");
 	int n, i;
@@ -194,7 +194,7 @@ void send_file(char*file, int socket, CLIENT* user){
 	if(fp == NULL) {
 		printf("File doesn't exist. Please specify a valid file name %ld \n", size);
         bufferSize = (unsigned char*) &size;
-        n = write(socket, (void*)bufferSize, 4);
+        n = SSL_write(ssl, (void*)bufferSize, 4);
         if (n < 0)
             printf("Connection error");
 		return;
@@ -204,11 +204,11 @@ void send_file(char*file, int socket, CLIENT* user){
 		//printf("Tamanho do arquivo %ld\n", size);  // CUIDAR LITTLE ENDIAN E BIG ENDIAN PQ O ALBERTO VAI RECLAMAR
 		// First passes the size of the file to the server
 		bufferSize = (unsigned char*) &size;
-		n = write(socket, (void*)bufferSize, 4);
+		n = SSL_write(ssl, (void*)bufferSize, 4);
 		if (n > 0) {
 			for(i = 0; i < size; i++) {
 				buffer = fgetc(fp);
-				n = write(socket, (void*)&buffer, 1);
+				n = SSL_write(ssl, (void*)&buffer, 1);
 				if (n < 0)
 					break;
 			}
@@ -217,23 +217,25 @@ void send_file(char*file, int socket, CLIENT* user){
 		// wait for servers answer
 		printf("File %s upload is finished.\n", file);
 		fclose(fp);
-		n = read(socket, newBuffer, 256);
+		n = SSL_read(ssl, newBuffer, 256);
 		printf("Client answered: %s\n", newBuffer);
 	}
 
 }
 
-void* server_loop(void* oldSocket){
+void* server_loop(void* args){
 	char buffer[256];
     char* fileName;
 	int n;
-	int socket = *((int *) oldSocket);
+	ARGS* argument = (ARGS*) args;
+	int socket = (int) argument->socket;
+	SSL* ssl = (SSL*) argument->ssl;
     char* username;
 	CLIENT* user;
 	while(1){
         /* read from the socket */
         bzero(buffer, 256);
-        n = read(socket, (void*)buffer, 256);
+        n = SSL_read(ssl, (void*)buffer, 256);
         if (n < 0){
             printf("ERROR reading from socket");
             close(socket);
@@ -246,21 +248,21 @@ void* server_loop(void* oldSocket){
             user = getClient(username);
             if(!login_user(user, socket)) {
                 // Signals the client that his connection was not permitted
-                n = write(socket, "FAIL", sizeof("FAIL"));
+                n = SSL_write(ssl, "FAIL", sizeof("FAIL"));
                 strcpy(buffer, "exit");
             }
             else {
                 // Everythings is ok while logging the user!
-                n = write(socket, "OK", sizeof("OK"));
+                n = SSL_write(ssl, "OK", sizeof("OK"));
             }
         }
         else if(strstr(buffer, "upload")) { 
             fileName = parseFilename(buffer);
-            receive_file(fileName, socket, user);
+            receive_file(fileName, socket,ssl, user);
 	        }
 	    else if(strstr(buffer, "download")){
 	    	fileName = parseFilename(buffer);
-            send_file(fileName, socket, user);
+            send_file(fileName, socket,ssl, user);
 	    }
 	    else if (strstr(buffer, "exit")){
 	    	printf("Closing client with id %d\n", socket);
@@ -270,12 +272,12 @@ void* server_loop(void* oldSocket){
     		break;
 	    }
 	    else if (strstr(buffer, "list")){
-	    	list_files(socket, user);
+	    	list_files(socket,ssl, user);
 	    }
 
         else if (strstr(buffer, "timeserver")){
             printf("chega aqui?\n");
-            timeServer(socket);
+            timeServer(ssl);
         }
 
 	}
@@ -359,11 +361,13 @@ int main(int argc, char *argv[])
 	        printf("ERROR on accept\n");
 	    }
 	    else {
+		ARGS* arguments = (ARGS*) malloc(sizeof(ARGS));
 		SSL* ssl = SSL_new(ctx);
 		SSL_set_fd(ssl, sockfd);
-    		*arg = newsockfd;
+		arguments->ssl = ssl;
+		arguments->socket = sockfd;
             printf("SOCKET %d\n", newsockfd);
-    		pthread_create(&tid[threadCount], NULL, server_loop, arg);
+    		pthread_create(&tid[threadCount], NULL, server_loop, (void*)arguments);
             threadCount++;
             printf("Criou a thread\n");
 	    }
