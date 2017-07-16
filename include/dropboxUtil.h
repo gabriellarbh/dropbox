@@ -4,7 +4,8 @@
 #include <time.h>
 #include <string.h>
 #include "fila2.h"
-#include <dispatch/dispatch.h>
+#include "openssl/ssl.h"
+#include "openssl/err.h"
 
 #define MAXNAME 30
 #define MAXFILES 30
@@ -47,6 +48,8 @@ FILEINFO* findFile(CLIENT* user, char* name);
 CLIENT* findClient(PFILA2 clientsList, char* name);
 char* getClientTime();
 int getFileFromStream(char* file, int socket);
+
+int getFileFromStreamSSL(char* file, int socket, SSL* ssl);
 char* parseFilename(char* src);
 int getUnusedFILEINFO(CLIENT user);
 char* getPath(CLIENT* user, char*file);

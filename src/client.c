@@ -13,18 +13,18 @@
 
 #define PORT 5000
 
- void close_connection(int socket) {
- 	int n = write(socket, "exit", strlen("exit"));
+ void close_connection(int socket, SSL* ssl) {
+ 	int n = SSL_write(ssl, "exit", strlen("exit"));
 	close(socket);
  }
 
 //Download file from remote directory
-void receive_file(char* file, int socket){
+void receive_file(char* file, int socket, SSL* ssl){
     int n;
     char buffer[256];
-    if(getFileFromStream(file, socket) > 0){
+    if(getFileFromStreamSSL(file, socket, ssl) > 0){
         strcpy(buffer, "File received successfully!\n");
-        n = write(socket, buffer, sizeof(buffer));
+        n = SSL_write(ssl, buffer, sizeof(buffer));
         printf("Download of the file %s finished!\n", file);
     }
     else {
@@ -33,18 +33,18 @@ void receive_file(char* file, int socket){
 }
 
 //Upload file to remote directory
-void send_file(char *file, int socket) {
+void send_file(char *file, int socket, SSL* ssl) {
 	FILE *fp = fopen(file, "r");
 	int n, count = 0;
 	long int size = file_size(fp);
-	char buffer, newBuffer[256], last_modified[MAXNAME];;
+	char buffer, newBuffer[256], last_modified[MAXNAME];
 	// Auxiliar to help casting the file size to buffer
 	unsigned char* bufferSize;
 
 	if(!fp) {
 		printf("File doesn't exist. Please specify a valid file name\n");
 		bufferSize = (unsigned char*) &size;
-		n = write(socket, (void*)bufferSize, 4);
+		n = SSL_write(ssl, (void*)bufferSize, 4);
 		return;
 	}
 	// Valid file, starts the stream to the server
@@ -57,12 +57,12 @@ void send_file(char *file, int socket) {
 		strcpy(last_modified, getCorrectTime(newTime));	
 		// After passes the size of the file to the server
 		bufferSize = (unsigned char*) &size;
-		n = write(socket, (void*)bufferSize, 4);
+		n = SSL_write(ssl, (void*)bufferSize, 4);
 		if (n > 0) {
 			while(count < size) {
 				buffer = fgetc(fp);
 				count++;
-				n = write(socket, (void*)&buffer, 1);
+				n = SSL_write(ssl, (void*)&buffer, 1);
 				if (n < 0)
 					break;
 			}
@@ -71,12 +71,12 @@ void send_file(char *file, int socket) {
 		// wait for servers answer
 		printf("File %s upload is finished.\n", file);
 		fclose(fp);
-		n = read(socket, newBuffer, 256);
+		n = SSL_read(ssl,newBuffer, 256);
 		printf("Server answered: %s\n", newBuffer);
 	}
 }
 
-void client_loop(int socket) {
+void client_loop(int socket, SSL* ssl) {
 	int n;
 	char* fileName;
     char buffer[256];
@@ -86,31 +86,31 @@ void client_loop(int socket) {
 	    fgets(buffer, 256, stdin);
 
 	    if(strstr(buffer, "exit")){
-	    	close_connection(socket);
+	    	close_connection(socket, ssl);
 	    	break;
 	    }
 	    if(strstr(buffer, "upload")){
 	    	// To get the filename
-			n = write(socket, buffer, strlen(buffer));
+			n = SSL_write(ssl, buffer, strlen(buffer));
 	    	if(n < 0)
 	    		printf("Error sending upload command. \n");
 	    	else {
 		    	// Parsing the file name
 		    	fileName = parseFilename(buffer);
-				send_file(fileName, socket);
+				send_file(fileName, socket, ssl);
 			}
 	    }
 	    else if(strstr(buffer, "list")){
-	    	n = write(socket, buffer, strlen(buffer));
-	    	print_file_list(socket);
+	    	n = SSL_write(ssl, buffer, strlen(buffer));
+	    	print_file_list(socket, ssl);
 	    }
 	    else if(strstr(buffer, "download")){
-	    	n = write(socket, buffer, strlen(buffer));
+	    	n = SSL_write(ssl, buffer, strlen(buffer));
 	    	if(n < 0)
 	    		printf("Error sending download command.\n");
 	    	else {
 		    	fileName = parseFilename(buffer);
-				receive_file(fileName, socket);
+				receive_file(fileName, socket, ssl);
 			}
 	    }
     }
@@ -141,10 +141,10 @@ int connect_server(char *host, int port) {
     return socketfd;
 }
 
-void print_file_list(int socket){
+void print_file_list(int socket, SSL* ssl){
 	int n;
 	char buffer[1000];
-		n = read(socket, buffer, sizeof(buffer));
+		n = SSL_read(ssl,buffer, sizeof(buffer));
 		printf("%s", buffer);
 }
 
@@ -159,20 +159,36 @@ int main(int argc, char *argv[])
     int port = atoi(argv[3]);
     int socket = connect_server(argv[2], port);
 
-    // Cria as duas listas, a local e a do servidor
-    
-    // Faz a conexão do usuário com o servidor
-    char username[40];
-    strcpy(username, "login ");
-    strcat(username, argv[1]);
-    int n = write(socket, username, strlen(username));
+    // Cria o necessario para uma conexao segura
+	OpenSSL_add_all_algorithms();
+	SSL_load_error_strings();
+	method = SSLv3_client_method();
+	ctx = SSL_CTX_new(method);
+	SSL *ssl;
+	
+	if (ctx == NULL){
+		ERR_print_errors_fp(stderr);
+		abort();
+	}
 
-    n = read(socket, buffer, sizeof(buffer));
-    if((n > 0) && (strstr(buffer, "OK")))
-    	client_loop(socket);
-    else {
-    	printf("You already have two devices connected. Please, disconnect from one and try again!\n");
-    }
-   	printf("Connection closed. Terminating the program\n");
-    return 0;
+	ssl = SSL_new(ctx);
+	SSL_set_fd(ssl, socket);
+	if (SSL_connect(ssl) == -1)
+		ERR_print_errors_fp(stderr);
+	else{
+	    // Faz a conexão do usuário com o servidor
+	    char username[40];
+	    strcpy(username, "login ");
+	    strcat(username, argv[1]);
+	    int n = SSL_write(ssl, username, strlen(username));
+
+	    n = SSL_read(ssl,buffer, sizeof(buffer));
+	    if((n > 0) && (strstr(buffer, "OK")))
+	    	client_loop(socket,ssl);
+	    else {
+	    	printf("You already have two devices connected. Please, disconnect from one and try again!\n");
+	    }
+	   	printf("Connection closed. Terminating the program\n");
+	    return 0;
+	}
 }

@@ -291,6 +291,19 @@ int main(int argc, char *argv[])
     pthread_t tid[10];
     int threadCount = 0;
     int port;
+
+	OpenSSL_add_all_algorithms();
+	SSL_load_error_strings();
+	method = SSLv3_server_method();
+	ctx = SSL_CTX_new(method);
+	SSL *ssl;
+	
+	if (ctx == NULL){
+		ERR_print_errors_fp(stderr);
+		abort();
+	}
+
+
 	int *arg = (int*)malloc(sizeof(*arg));
     // Criação da lista de clientes geral do servidor
     clientsList = (PFILA2) malloc(sizeof(FILA2));

@@ -154,6 +154,28 @@ int getFileFromStream(char* file, int socket){
 	    return size;
 	}
 }
+int getFileFromStreamSSL(char* file, int socket, SSL* ssl){
+	long int size = 0;
+	int i,n;
+    unsigned char* bufferSize;
+    char buffer;
+    /* pega o tamanho do file a ser recebido */
+    bufferSize = (unsigned char*)&size;
+    n = SSL_read(ssl,bufferSize, 4);
+    if (size >= SIZE_ERROR){
+    	return -1;
+    }
+    else  {
+    	FILE* fp = fopen(file, "w+");
+	    /* começa a ler da stream, byte a byte, o arquivo */
+	    for(i = 0; i < size; i++){
+	        n = SSL_read(ssl, (void*)&buffer, 1);
+	        fputc(buffer,fp);
+	    }
+	    fclose(fp);
+	    return size;
+	}
+}
 char* getPath(CLIENT* user, char*file) {
 	static char path[MAXCHARS];
     strcpy(path, "sync_dir_");

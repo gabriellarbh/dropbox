@@ -10,9 +10,11 @@
 #include <netdb.h> 
 #include <pthread.h>
 #include <dirent.h>
-#include <dispatch/dispatch.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #include "dropboxUtil.h"
-
+const SSL_METHOD *method;
+SSL_CTX *ctx;
 PFILA2 clientsList;
 pthread_mutex_t mutexDevicesRegister = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexClientRegister = PTHREAD_MUTEX_INITIALIZER;

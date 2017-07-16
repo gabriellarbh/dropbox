@@ -2,11 +2,11 @@
 all: client server
 client: ./src/client.c dropbox.a ./include/dropboxUtil.h
         # O compilador faz a ligação entre os dois objetos
-	gcc -o client ./src/client.c -I./include -L./lib -ldropbox
+	gcc -o client ./src/client.c -I./include -L./lib -ldropbox -lssl -lcrypto
 
 server: ./src/server.c dropbox.a ./include/dropboxUtil.h ./include/fila2.h
         # O compilador faz a ligação entre os dois objetos
-	gcc -o server ./src/server.c -I./include -L./lib -ldropbox -pthread
+	gcc -o server ./src/server.c -I./include -L./lib -ldropbox -pthread -lssl -lcrypto
 #-----> Distancia com o botão TAB ### e não com espaços
 
 dropbox.a: fila2.o dropboxUtil.o
