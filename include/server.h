@@ -15,6 +15,7 @@
 #include "dropboxUtil.h"
 const SSL_METHOD *method;
 SSL_CTX *ctx;
+
 PFILA2 clientsList;
 pthread_mutex_t mutexDevicesRegister = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexClientRegister = PTHREAD_MUTEX_INITIALIZER;
@@ -24,7 +25,7 @@ struct serverLoopParams {
 	SSL* ssl;
 };
 
-typedef struct serverLoopParams ARGS;
+typedef struct serverLoopParams ARGSERV;
 void sync_server();
 void receive_file(char* file, int socket,SSL* ssl, CLIENT* user);
 void timeServer(SSL* ssl);

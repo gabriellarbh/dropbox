@@ -135,9 +135,9 @@ int connect_server(char *host, int port) {
 	serv_addr.sin_family = AF_INET;     
 	serv_addr.sin_port = htons(port);    
 	serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
-	bzero(&(serv_addr.sin_zero), 8);    
+	bzero(&(serv_addr.sin_zero), 8);   	
 	if (connect(socketfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
-        printf("ERROR connecting\n");
+        	printf("ERROR connecting\n");
     return socketfd;
 }
 
@@ -146,7 +146,7 @@ void print_file_list(int socket, SSL* ssl){
 	char buffer[1000];
 		n = SSL_read(ssl,buffer, sizeof(buffer));
 		printf("%s", buffer);
-}
+}	
 
 
 int main(int argc, char *argv[])
@@ -158,14 +158,14 @@ int main(int argc, char *argv[])
     }
     int port = atoi(argv[3]);
     int socket = connect_server(argv[2], port);
-
+	//int socket =
     // Cria o necessario para uma conexao segura
+	SSL_library_init();
 	OpenSSL_add_all_algorithms();
 	SSL_load_error_strings();
-	method = SSLv3_client_method();
+	method = SSLv23_client_method();
 	ctx = SSL_CTX_new(method);
 	SSL *ssl;
-	
 	if (ctx == NULL){
 		ERR_print_errors_fp(stderr);
 		abort();
@@ -173,9 +173,23 @@ int main(int argc, char *argv[])
 
 	ssl = SSL_new(ctx);
 	SSL_set_fd(ssl, socket);
-	if (SSL_connect(ssl) == -1)
+
+	if (SSL_connect(ssl) == -1){
+		printf("errooooou\n");
 		ERR_print_errors_fp(stderr);
+}
 	else{
+ //GG
+      		X509 *cert;
+      		char *line;
+      		cert = SSL_get_peer_certificate(ssl);
+		if (cert != NULL) {
+		  line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+		  printf("Subject: %s\n", line);
+		  free(line);
+		  line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+		  printf("Issuer: %s\n", line);
+		}
 	    // Faz a conexão do usuário com o servidor
 	    char username[40];
 	    strcpy(username, "login ");
@@ -183,8 +197,10 @@ int main(int argc, char *argv[])
 	    int n = SSL_write(ssl, username, strlen(username));
 
 	    n = SSL_read(ssl,buffer, sizeof(buffer));
-	    if((n > 0) && (strstr(buffer, "OK")))
+	    if((n > 0) && (strstr(buffer, "OK"))){
+		printf("You are connected!\n");
 	    	client_loop(socket,ssl);
+		}
 	    else {
 	    	printf("You already have two devices connected. Please, disconnect from one and try again!\n");
 	    }

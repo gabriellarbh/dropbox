@@ -227,15 +227,23 @@ void* server_loop(void* args){
 	char buffer[256];
     char* fileName;
 	int n;
-	ARGS* argument = (ARGS*) args;
-	int socket = (int) argument->socket;
-	SSL* ssl = (SSL*) argument->ssl;
+	int socket = *((int*) args);
+	SSL* ssl = SSL_new(ctx);
+	SSL_set_fd(ssl, socket);
+	int sslErr = SSL_accept(ssl);
+		
+	if (sslErr <= 0) {
+		printf("ERROR with acception SSL\n");
+		return 0;
+	}
     char* username;
 	CLIENT* user;
 	while(1){
         /* read from the socket */
         bzero(buffer, 256);
         n = SSL_read(ssl, (void*)buffer, 256);
+	
+	printf("FUNCIONA PORQUERA %s\n", buffer);		
         if (n < 0){
             printf("ERROR reading from socket");
             close(socket);
@@ -244,7 +252,7 @@ void* server_loop(void* args){
         if(strstr(buffer, "login")){
             username = strtok(buffer, " ");
             username = strtok(NULL, " ");
-
+		printf("user %s", username);
             user = getClient(username);
             if(!login_user(user, socket)) {
                 // Signals the client that his connection was not permitted
@@ -293,10 +301,10 @@ int main(int argc, char *argv[])
     pthread_t tid[10];
     int threadCount = 0;
     int port;
-
+	SSL_library_init();
 	OpenSSL_add_all_algorithms();
 	SSL_load_error_strings();
-	method = SSLv3_server_method();
+	method = SSLv23_server_method();
 	ctx = SSL_CTX_new(method);
 	SSL *ssl;
 	
@@ -310,11 +318,12 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if(!SSL_CTX_use_PrivateKey_file(ctx, "PrivateKey.pem", SSL_FILETYPE_PEM)){
+	if(!SSL_CTX_use_PrivateKey_file(ctx, "KeyFile.pem", SSL_FILETYPE_PEM)){
 		printf("Error with PrivateKey. Abortin\n");
 		return -1;
 
 	}
+	printf("Certifications done\n");
 
 
 
@@ -361,13 +370,8 @@ int main(int argc, char *argv[])
 	        printf("ERROR on accept\n");
 	    }
 	    else {
-		ARGS* arguments = (ARGS*) malloc(sizeof(ARGS));
-		SSL* ssl = SSL_new(ctx);
-		SSL_set_fd(ssl, sockfd);
-		arguments->ssl = ssl;
-		arguments->socket = sockfd;
-            printf("SOCKET %d\n", newsockfd);
-    		pthread_create(&tid[threadCount], NULL, server_loop, (void*)arguments);
+		*arg = newsockfd;
+    		pthread_create(&tid[threadCount], NULL, server_loop,(void *)arg);
             threadCount++;
             printf("Criou a thread\n");
 	    }
