@@ -22,7 +22,7 @@
 void receive_file(char* file, int socket, SSL* ssl){
     int n;
     char buffer[256];
-    if(getFileFromStream(file, socket) > 0){
+    if(getFileFromStream(file, socket, ssl) > 0){
         strcpy(buffer, "File received successfully!\n");
         n = SSL_write(ssl, buffer, sizeof(buffer));
         printf("Download of the file %s finished!\n", file);

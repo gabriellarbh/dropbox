@@ -12,11 +12,13 @@
 #include <dirent.h>
 #include <dispatch/dispatch.h>
 #include "dropboxUtil.h"
+const SSL_METHOD *method;
+SSL_CTX *ctx;
 
 PFILA2 clientsList;
 pthread_mutex_t mutexDevicesRegister = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexClientRegister = PTHREAD_MUTEX_INITIALIZER;
 
 void sync_server();
-void receive_file(char *file, int socket, CLIENT* user);
-void send_file(char *file, int socket, CLIENT* user);
+void receive_file(char *file, int socket, CLIENT* user, SSL* ssl);
+void send_file(char *file, int socket, CLIENT* user, SSL* ssl);

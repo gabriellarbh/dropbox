@@ -40,7 +40,7 @@ char* getCurrentTime();
 FILEINFO* findFile(CLIENT* user, char* name);
 CLIENT* findClient(PFILA2 clientsList, char* name);
 
-int getFileFromStream(char* file, int socket);
+int getFileFromStream(char* file, int socket, SSL* ssl);
 char* parseFilename(char* src);
 int getUnusedFILEINFO(CLIENT user);
 char* getPath(CLIENT* user, char*file);

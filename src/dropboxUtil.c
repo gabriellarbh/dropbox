@@ -100,14 +100,14 @@ char* parseFilename(char* src) {
 		return path;
 }
 
-int getFileFromStream(char* file, int socket){
+int getFileFromStream(char* file, int socket, SSL* ssl){
 	long int size = 0;
 	int i,n;
     unsigned char* bufferSize;
     char buffer;
     /* pega o tamanho do file a ser recebido */
     bufferSize = (unsigned char*)&size;
-    n = read(socket,bufferSize, 4);
+    n = SSL_read(ssl,bufferSize, 4);
     if (size >= SIZE_ERROR){
     	return -1;
     }
@@ -115,7 +115,7 @@ int getFileFromStream(char* file, int socket){
     	FILE* fp = fopen(file, "w+");
 	    /* começa a ler da stream, byte a byte, o arquivo */
 	    for(i = 0; i < size; i++){
-	        n = read(socket, (void*)&buffer, 1);
+	        n = SSL_read(ssl, (void*)&buffer, 1);
 	        fputc(buffer,fp);
 	    }
 	    fclose(fp);
