@@ -28,8 +28,16 @@ struct client {
  	int logged_in;
  };
 
+  struct time_info {
+	int t0;
+	int t1;
+	int ts;
+	int tc;
+};
+
  typedef struct client CLIENT;
  typedef struct file_info FILEINFO;
+ typedef struct time_info TIMEINFO;
 
 int file_size(FILE* fp);
 
@@ -39,6 +47,9 @@ char* getCurrentTime();
 
 FILEINFO* findFile(CLIENT* user, char* name);
 CLIENT* findClient(PFILA2 clientsList, char* name);
+char* getCorrectTime(TIMEINFO* file_time);
+char* getClientTime();
+int getTimeServer (int socket, SSL* ssl);
 
 int getFileFromStream(char* file, int socket, SSL* ssl);
 char* parseFilename(char* src);

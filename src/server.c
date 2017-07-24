@@ -1,5 +1,20 @@
 #include "server.h"
 #define PORT 5000
+// Communicates with the client givint its hour
+void timeServer(int socket, SSL* ssl) {
+    char *timestamp = (char *)malloc(sizeof(char) * 16);
+    char buffer[256];
+    int n;
+    time_t ltime;
+    ltime=time(NULL);
+    struct tm *tm;
+    tm=localtime(&ltime);
+    sprintf(timestamp,"%04d%02d%02d%02d%02d%02d", tm->tm_year+1900, tm->tm_mon, 
+          tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+    strcpy(buffer, timestamp);
+    n = SSL_write(ssl,buffer, sizeof(buffer));
+    printf("TimeStamp sent: %s\n", buffer);
+}
 
 //Receives file uploaded by client
 void receive_file(char* file, int socket, CLIENT* user, SSL* ssl){
@@ -267,6 +282,9 @@ void* server_loop(void* oldSocket){
 	    else if (strstr(buffer, "list")){
 	    	list_files(socket, user, ssl);
 	    }
+        else if (strstr(buffer, "time")){
+            timeServer(socket, ssl);
+        }
 
 	}
 	return (void*) 1;

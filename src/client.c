@@ -32,6 +32,16 @@ void receive_file(char* file, int socket, SSL* ssl){
     }
 }
 
+
+void printTime(int socket, SSL* ssl) {
+	TIMEINFO* newTime = (TIMEINFO*) malloc(sizeof(TIMEINFO));
+	newTime->t0 = atoi(getClientTime());		
+	//envia a requisição ao servidor pedindo o seu horario 
+	newTime->ts = getTimeServer(socket, ssl);  	
+	newTime->t1 = atoi(getClientTime());		
+	printf("\nCorrect time %s\n", getCorrectTime(newTime));
+}
+
 //Upload file to remote directory
 void send_file(char *file, int socket, SSL* ssl) {
 	FILE *fp = fopen(file, "r");
@@ -106,6 +116,10 @@ void client_loop(int socket, SSL* ssl) {
 		    	fileName = parseFilename(buffer);
 				receive_file(fileName, socket, ssl);
 			}
+	    }
+	    else if (strstr(buffer, "time")) {
+	    	n = SSL_write(ssl, buffer, strlen(buffer));
+	    	printTime(socket, ssl);
 	    }
     }
 }

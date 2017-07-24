@@ -100,6 +100,51 @@ char* parseFilename(char* src) {
 		return path;
 }
 
+// Returns a string with the client time
+char* getClientTime() {
+	char *timestamp = (char *)malloc(sizeof(char) * 16);
+	int n;
+ 	time_t ltime;
+	ltime=time(NULL);
+	struct tm *tm;
+	tm=localtime(&ltime);
+  	sprintf(timestamp,"%04d%02d%02d%02d%02d%02d", tm->tm_year+1900, tm->tm_mon, 
+    	  tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+	return timestamp;
+}
+
+// Given a TIMEINFO, returns a str with correct time
+char* getCorrectTime(TIMEINFO* file_time) {
+	struct tm* timeinfo;
+	char *str = (char *)malloc(sizeof(char) * 16);	
+	if (file_time == NULL) {
+	  printf("ERROR on calculate synchron time\n");
+	  return NULL;
+	}
+	else {
+		printf("Time before %d time after %d\n", file_time->t0, file_time->t1);
+		file_time->tc = (file_time->ts + ((file_time->t1 - file_time->t0)/2));
+     	sprintf(str, "%d", file_time->tc); 
+     	return str;
+	//return ctime((const time_t *)&file_time->ts);
+	
+	}
+}
+
+int getTimeServer (int socket, SSL* ssl) {
+    char buffer[256];
+    int n;	
+	n = SSL_read(ssl, buffer, 256);
+	printf("Request return %s\n", buffer);
+   	if (n < 0){
+             printf("ERROR reading from socket");
+       	     return -1;
+        }
+	else
+		return atoi(buffer);    
+}
+
+
 int getFileFromStream(char* file, int socket, SSL* ssl){
 	long int size = 0;
 	int i,n;
