@@ -4,6 +4,9 @@
 #include <time.h>
 #include <string.h>
 #include "fila2.h"
+
+#include "openssl/ssl.h"
+#include "openssl/err.h"
 #include <dispatch/dispatch.h>
 
 #define MAXNAME 30
@@ -41,6 +44,8 @@ int getFileFromStream(char* file, int socket);
 char* parseFilename(char* src);
 int getUnusedFILEINFO(CLIENT user);
 char* getPath(CLIENT* user, char*file);
+
+void initSSL();
 
 void parseNameExt(char* src, char* name, char* ext);
 

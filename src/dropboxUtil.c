@@ -47,6 +47,13 @@ char* getCurrentTime() {
 	return asctime (timeinfo);
 }
 
+
+void initSSL() {
+	SSL_load_error_strings();
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+}
+
 FILEINFO* findFile(CLIENT* user, char* name) {
 	FirstFila2(user->files);
 	FILEINFO* it;
